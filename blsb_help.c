@@ -23,12 +23,18 @@
 
 #include "neostats.h"
 
+const char blsb_help_domains_oneline[] = "Manage the Blacklist Domains";
 const char blsb_help_status_oneline[] = "View blsb state information";
 const char blsb_help_lookup_oneline[] = "Lookup DNS record";
 const char blsb_help_remove_oneline[] = "Remove an akill set by blsb";
 const char blsb_help_check_oneline[] = "Scan a selected user";
 const char blsb_help_ports_oneline[] = "Allows you to customize the ports scanned";
 const char blsb_help_set_oneline[] = "Change blsb configuration options";
+
+const char *blsb_help_domains[] = {
+	"help",
+	NULL
+};
 
 const char *blsb_help_lookup[] = {
 	"Syntax: \2LOOKUP <ip|hostname> [type]\2",

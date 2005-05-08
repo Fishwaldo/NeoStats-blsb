@@ -33,6 +33,14 @@
 Bot *blsb_bot;
 int do_set_cb (CmdParams *cmdparams, SET_REASON reason);
 static int ss_event_signon (CmdParams* cmdparams);
+int blsb_cmd_domains (CmdParams* cmdparams);
+
+
+static dom_list stddomlist[] = {
+	{"Blitzed OPM", "opm.blitzed.org", 1},
+	{"Secure IRC", "bl.irc-chat.net", 1},
+	{"", "", 0}
+};
 
 /** Copyright info */
 const char *blsb_copyright[] = {
@@ -46,7 +54,7 @@ const char *blsb_copyright[] = {
  * This structure is required for your module to load and run on NeoStats
  */
 ModuleInfo module_info = {
-	"OPSB",
+	"BLSB",
 	"An Black List Scanning Bot",
 	blsb_copyright,
 	blsb_about,
@@ -69,6 +77,7 @@ static int blsb_set_exclusions_cb( CmdParams *cmdparams, SET_REASON reason )
 
 static bot_cmd blsb_commands[]=
 {
+	{"DOMAINS",	blsb_cmd_domains,		1,	NS_ULEVEL_ADMIN,	blsb_help_domains, blsb_help_domains_oneline},
 	{NULL,		NULL,			0, 	0,		NULL, 		NULL}
 };
 
@@ -98,6 +107,115 @@ static BotInfo blsb_botinfo =
 int do_set_cb (CmdParams *cmdparams, SET_REASON reason) {
 
 	return NS_SUCCESS;
+}
+
+int blsb_cmd_domains_list (CmdParams* cmdparams) 
+{
+	dom_list *dl;
+	int i;
+	lnode_t *lnode;
+
+	lnode = list_first(blsb.domains);
+	i = 1;
+	irc_prefmsg (blsb_bot, cmdparams->source, "BlackList Domains Listing:");
+	while (lnode) {
+		dl = lnode_get(lnode);
+		irc_prefmsg (blsb_bot, cmdparams->source, "%d) %s Domain: %s Type: %d", i, dl->name, dl->domain, dl->type);
+		++i;
+		lnode = list_next(blsb.domains, lnode);
+	}
+	irc_prefmsg (blsb_bot, cmdparams->source, "End of list.");
+	CommandReport(blsb_bot, "%s requested BlackList Domain Listing", cmdparams->source->name);
+	return NS_SUCCESS;
+}
+
+/* ./msg blsb domains add <name> <type> <domain> */
+int blsb_cmd_domains_add (CmdParams* cmdparams) 
+{
+	dom_list *dl;
+	lnode_t *lnode;
+
+	if (cmdparams->ac < 3) {
+		return NS_ERR_SYNTAX_ERROR;
+	}
+	if (list_isfull(blsb.domains)) {
+		irc_prefmsg (blsb_bot, cmdparams->source, "Error, Domains list is full");
+		return NS_SUCCESS;
+	}
+	if (!atoi(cmdparams->av[2])) {
+		irc_prefmsg (blsb_bot, cmdparams->source, "type field does not contain a valid type");
+		return NS_SUCCESS;
+	}
+	/* XXX do a initial lookup on the domain to check it exists? */
+
+	/* check for duplicates */
+	lnode = list_first(blsb.domains);
+	while (lnode) {
+		dl = lnode_get(lnode);
+		if ((!ircstrcasecmp(dl->name, cmdparams->av[1])) || (!ircstrcasecmp(dl->domain, cmdparams->av[3]))) {
+			irc_prefmsg (blsb_bot, cmdparams->source, "Duplicate Entry for Domain %s", cmdparams->av[1]);
+			return NS_SUCCESS;
+		}
+		lnode = list_next(blsb.domains, lnode);
+	}
+	dl = malloc(sizeof(dom_list));
+	strlcpy(dl->name, cmdparams->av[1], BUFSIZE);
+	strlcpy(dl->domain, cmdparams->av[3], BUFSIZE);
+	dl->type = atoi(cmdparams->av[2]);
+		
+	lnode_create_append(blsb.domains, dl);
+	DBAStore("domains", dl->name, (void *)dl, sizeof(dom_list));
+	irc_prefmsg (blsb_bot, cmdparams->source, "Added Domain %s(%s) as type %d to Domains list", dl->name, dl->domain, dl->type);
+	CommandReport(blsb_bot, "%s added Domain %s(%s) as type %d to Domains list", cmdparams->source->name, dl->name, dl->domain, dl->type);
+	return NS_SUCCESS;
+}
+
+int blsb_cmd_domains_del (CmdParams* cmdparams) 
+{
+	dom_list *dl;
+	int i;
+	lnode_t *lnode;
+
+	if (cmdparams->ac < 1) {
+		return NS_ERR_SYNTAX_ERROR;
+	}
+	if (atoi(cmdparams->av[1]) != 0) {
+		lnode = list_first(blsb.domains);
+		i = 1;
+		while (lnode) {
+			if (i == atoi(cmdparams->av[1])) {
+				/* delete the entry */
+				dl = lnode_get(lnode);
+				list_delete(blsb.domains, lnode);
+				lnode_destroy(lnode);
+				irc_prefmsg (blsb_bot, cmdparams->source, "Deleted Blacklist Domain %s (%s) out of domains list", dl->name, dl->domain);
+				CommandReport(blsb_bot, "%s deleted Blacklist Domain %s (%s) out of domains list", cmdparams->source->name, dl->name, dl->domain);
+				DBADelete("domains", dl->name);
+				ns_free(dl);
+				/* just to be sure, lets sort the list */
+				return 1;
+			}
+			++i;
+			lnode = list_next(blsb.domains, lnode);
+		}		
+		/* if we get here, then we can't find the entry */
+		irc_prefmsg (blsb_bot, cmdparams->source, "Error, Can't find entry %d. /msg %s domains list", atoi(cmdparams->av[1]), blsb_bot->name);
+	} else {
+		irc_prefmsg (blsb_bot, cmdparams->source, "Error, Out of Range");
+	}
+	return NS_SUCCESS;
+}
+
+int blsb_cmd_domains (CmdParams* cmdparams) 
+{
+	if (!ircstrcasecmp (cmdparams->av[0], "LIST")) {
+		return blsb_cmd_domains_list (cmdparams);
+	} else if (!ircstrcasecmp (cmdparams->av[0], "ADD")) {
+		return blsb_cmd_domains_add (cmdparams);
+	} else if (!ircstrcasecmp (cmdparams->av[0], "DEL")) {
+		return blsb_cmd_domains_del (cmdparams);
+	}
+	return NS_ERR_SYNTAX_ERROR;
 }
 
 
@@ -209,20 +327,102 @@ ModuleEvent module_events[] =
 	{ EVENT_NULL, 	NULL}
 };
 
+
+void dnsbl_callback(void *data, adns_answer *a) {
+	Client *client = (Client *)data;
+	int len;
+	char *show;
+	if (a && a->nrrs > 0) {
+		adns_rr_info(a->type, 0, 0, &len, 0, 0);
+printf("%d\n", len);
+		if (!adns_rr_info(a->type, 0, 0, &len, 0, &show)) {
+			printf("DNSBL lookup for %s resolved %s\n", client->name, show);
+			free(show);
+		} else {
+			printf("didn't work\n");
+		}
+	}
+
+}
+
+
 /* this function kicks of a scan of a user that just signed on the network */
 static int ss_event_signon (CmdParams* cmdparams)
 {
-	return 1;
+	dom_list *dl;
+	lnode_t *node;
+	unsigned char a, b, c, d;
+	int buflen;
+	char *buf;
+	
+	SET_SEGV_LOCATION();
+	
+	if (ModIsServerExcluded(cmdparams->source->uplink)) {
+		return NS_SUCCESS;
+	}
+	
+	if (IsNetSplit(cmdparams->source)) {
+		return NS_SUCCESS;
+	}
+
+	d = (unsigned char) (cmdparams->source->ip.s_addr >> 24) & 0xFF;
+         c = (unsigned char) (cmdparams->source->ip.s_addr >> 16) & 0xFF;
+         b = (unsigned char) (cmdparams->source->ip.s_addr >> 8) & 0xFF;
+         a = (unsigned char) (cmdparams->source->ip.s_addr & 0xFF);   
+
+         node = list_first(blsb.domains);
+         while (node) {
+         	dl = lnode_get(node);
+	         buflen = 18 + strlen(dl->domain);
+	         buf = malloc(buflen * sizeof(*buf));
+	         ircsnprintf(buf, buflen, "%d.%d.%d.%d.%s", d, c, b, a, dl->domain);
+	         printf("lookup %s\n", buf);
+	         switch (dl->type) {
+	         	case 1:	/* TXT record */
+			         dns_lookup(buf, adns_r_txt, dnsbl_callback, cmdparams->source);
+			         break;
+			default:
+				nlog(LOG_WARNING, "Unknown Type for DNS BL %s", dl->name);
+				break;
+		}
+	         free(buf);
+	         node = list_next(blsb.domains, node);
+	}
+
+	return NS_SUCCESS;
+}
+
+int load_dom( void *data, int size) {
+	dom_list *dl;
+
+	dl = ns_calloc( sizeof(dom_list));
+	os_memcpy(dl, data, sizeof (dom_list));
+	lnode_create_append(blsb.domains, dl);
+	return NS_FALSE;
 }
 
 int ModInit( void )
 {
+	int i;
+	dom_list *dl;
 	ModuleConfig (blsb_settings);
 	/* we have to be careful here. Currently, we have 7 sockets that get opened per connection. Soooo.
 	*  we check that MAX_SCANS is not greater than the maxsockets available / 7
 	*  this way, we *shouldn't* get problems with running out of sockets 
 	*/
 	me.want_nickip = 1;
+	blsb.domains = list_create(-1);
+	DBAFetchRows("domains", load_dom);
+	if (list_count(blsb.domains) == 0) {
+		for (i = 0; stddomlist[i].type != 0; i++) {
+			dl = os_malloc(sizeof(dom_list));
+			strlcpy(dl->name, stddomlist[i].name, BUFSIZE);
+			strlcpy(dl->domain, stddomlist[i].domain, BUFSIZE);
+			dl->type = stddomlist[i].type;
+			DBAStore("domains", dl->name, (void *)dl, sizeof(dom_list));
+			lnode_create_append(blsb.domains, dl);
+		}
+	}
 	return NS_SUCCESS;
 }
 

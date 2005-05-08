@@ -41,6 +41,7 @@ struct blsb {
 	int doakill;
 	int verbose;
 	int exclusions;
+	list_t *domains;
 } blsb;
 
 typedef struct cache_entry {
@@ -51,6 +52,13 @@ typedef struct cache_entry {
 /* this is a list of cached scans */
 list_t *cache;
 
+typedef struct dom_list {
+	char name[BUFSIZE];
+	char domain[BUFSIZE];
+	int type;
+} dom_list;
+
+
 
 /* blsb_help.c */
 extern const char *blsb_help_set_akill [];
@@ -58,5 +66,7 @@ extern const char *blsb_help_set_akilltime [];
 extern const char *blsb_help_set_cachetime [];
 extern const char *blsb_help_set_verbose [];
 extern const char *blsb_help_set_exclusions[];
+extern const char *blsb_help_domains_oneline[];
+extern const char *blsb_help_domains[];
 extern const char *blsb_about[];
 #endif /* blsb_H */
