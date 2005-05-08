@@ -18,7 +18,7 @@
 **  USA
 **
 ** NetStats CVS Identification
-** $Id: blsb.h 162 2005-04-28 09:45:44Z Fish $
+** $Id$
 */
 
 

@@ -18,7 +18,7 @@
 **  USA
 **
 ** NeoStats CVS Identification
-** $Id: blsb.c 162 2005-04-28 09:45:44Z Fish $
+** $Id$
 */
 
 #include "neostats.h"
