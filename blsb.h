@@ -58,6 +58,12 @@ typedef struct dom_list {
 	int type;
 } dom_list;
 
+typedef struct scanclient {
+	Client *user;
+	dom_list *domain;
+	Client *check;
+	char *lookup;
+} scanclient;
 
 
 /* blsb_help.c */
@@ -69,4 +75,7 @@ extern const char *blsb_help_set_exclusions[];
 extern const char *blsb_help_domains_oneline[];
 extern const char *blsb_help_domains[];
 extern const char *blsb_about[];
+extern const char *blsb_help_check[];
+extern const char *blsb_help_check_oneline[];
+
 #endif /* blsb_H */

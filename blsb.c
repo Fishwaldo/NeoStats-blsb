@@ -34,11 +34,13 @@ Bot *blsb_bot;
 int do_set_cb (CmdParams *cmdparams, SET_REASON reason);
 static int ss_event_signon (CmdParams* cmdparams);
 int blsb_cmd_domains (CmdParams* cmdparams);
-
+int blsb_cmd_check (CmdParams* cmdparams);
+void dnsbl_callback(void *data, adns_answer *a);
 
 static dom_list stddomlist[] = {
 	{"Blitzed OPM", "opm.blitzed.org", 1},
 	{"Secure IRC", "bl.irc-chat.net", 1},
+	{"Tor Exit Server", "tor.dnsbl.sectoor.de", 1},
 	{"", "", 0}
 };
 
@@ -78,6 +80,7 @@ static int blsb_set_exclusions_cb( CmdParams *cmdparams, SET_REASON reason )
 static bot_cmd blsb_commands[]=
 {
 	{"DOMAINS",	blsb_cmd_domains,		1,	NS_ULEVEL_ADMIN,	blsb_help_domains, blsb_help_domains_oneline},
+	{"CHECK",	blsb_cmd_check,		1,	NS_ULEVEL_OPER,	blsb_help_check,	 blsb_help_check_oneline},
 	{NULL,		NULL,			0, 	0,		NULL, 		NULL}
 };
 
@@ -218,6 +221,69 @@ int blsb_cmd_domains (CmdParams* cmdparams)
 	return NS_ERR_SYNTAX_ERROR;
 }
 
+int blsb_cmd_check (CmdParams* cmdparams) 
+{
+	Client *user;
+	lnode_t *node;
+	dom_list *dl;
+	scanclient *sc = NULL;
+	unsigned char a, b, c, d;
+	int buflen;
+	
+	
+	user = FindUser(cmdparams->av[0]);
+	if (!user) {
+#if 0
+/* XXX TODO: Lookup Hostname */
+		if (!ValidateHost(cmdparams->av[0]) {
+			irc_prefmsg(blsb_bot, cmdparams->source, "Invalid Nick or Host");
+			return NS_FAILURE;
+		} else {
+		         sc = os_malloc(sizeof(scanclient));
+		         sc->check = 1;
+		         sc->user = cmdparams->source;
+		         sc->domain = dl;
+		         sc->lookup = os_malloc(buflen);
+	         ircsnprintf(sc->lookup, buflen, "%d.%d.%d.%d.%s", d, c, b, a, dl->domain);
+#endif
+		irc_prefmsg(blsb_bot, cmdparams->source, "Can not find %s online\n", cmdparams->av[0]);
+		return NS_ERR_SYNTAX_ERROR;
+	}
+	d = (unsigned char) (user->ip.s_addr >> 24) & 0xFF;
+         c = (unsigned char) (user->ip.s_addr >> 16) & 0xFF;
+         b = (unsigned char) (user->ip.s_addr >> 8) & 0xFF;
+         a = (unsigned char) (user->ip.s_addr & 0xFF);   
+
+         node = list_first(blsb.domains);
+         while (node) {
+         	dl = lnode_get(node);
+	         buflen = 18 + strlen(dl->domain);
+	         sc = os_malloc(sizeof(scanclient));
+	         sc->check = cmdparams->source;
+	         sc->user = user;
+	         sc->domain = dl;
+	         sc->lookup = os_malloc(buflen);
+	         ircsnprintf(sc->lookup, buflen, "%d.%d.%d.%d.%s", d, c, b, a, dl->domain);
+	         switch (dl->type) {
+	         	case 1:	/* TXT record */
+			         dns_lookup(sc->lookup, adns_r_txt, dnsbl_callback, sc);
+			         break;
+			case 2: /* A record */
+				dns_lookup(sc->lookup, adns_r_a, dnsbl_callback, sc);
+				break;
+			default:
+				nlog(LOG_WARNING, "Unknown Type for DNS BL %s", dl->name);
+				break;
+		}
+	         node = list_next(blsb.domains, node);
+	}
+	if (sc) {
+		irc_prefmsg (blsb_bot, cmdparams->source, "Checking %s (%d.%d.%d.%d) against DNS Blacklists", sc->user->name, a, b, c, d);
+		CommandReport(blsb_bot, "%s is checking %s (%d.%d.%d.%d) against DNS Blacklists", cmdparams->source->name, sc->user->name, a, b, c, d);
+	}
+	return NS_SUCCESS;
+}
+
 
 /** @brief ModSynch
  *
@@ -238,89 +304,6 @@ int ModSynch (void)
 	return NS_SUCCESS;
 };
 
-void addtocache(unsigned long ip) 
-{
-	lnode_t *cachenode;
-	cache_entry *ce;
-
-	SET_SEGV_LOCATION();
-			
-	/* pop off the oldest entry */
-	if (list_isfull(cache)) {
-		dlog (DEBUG2, "blsb: Deleting Tail of Cache: %d", (int)list_count(cache));
-		cachenode = list_del_last(cache);
-		ce = lnode_get(cachenode);
-		lnode_destroy(cachenode);
-		ns_free(ce);
-	}
-	cachenode = list_first(cache);
-	while (cachenode) {
-		ce = lnode_get(cachenode);
-		if (ce->ip == ip) {
-			dlog (DEBUG2,"blsb: Not adding %ld to cache as it already exists", ip);
-			return;
-		}
-		cachenode = list_next(cache, cachenode);
-	}
-	
-	ce = malloc(sizeof(cache_entry));
-	ce->ip = ip;
-	ce->when = time(NULL);
-	lnode_create_append(cache, ce);
-}
-
-int checkcache(unsigned long ip) 
-{
-#if 0
-	Client *scanclient;
-	lnode_t *node, *node2;
-	cache_entry *ce;
-
-	SET_SEGV_LOCATION();
-	if( scandata->server )
-	{
-		scanclient = FindServer(scandata->server);
-		if( scanclient && ModIsServerExcluded( scanclient ) )
-		{
-			return 1;
-		}
-	}
-	if( scandata->who )
-	{
-		scanclient = FindUser(scandata->who);
-		if( scanclient && ModIsUserExcluded( scanclient ) )
-		{
-			return 2;
-		}
-	}
-	node = list_first(cache);
-	while (node) {
-		ce = lnode_get(node);
-		
-		/* delete any old cache entries */
-	
-		if ((time(NULL) - ce->when) > blsb.cachetime) {
-			dlog (DEBUG1, "blsb: Deleting old cache entry %ld", ce->ip);
-			node2 = list_next(cache, node);			
-			list_delete(cache, node);
-			lnode_destroy(node);
-			ns_free(ce);
-			node = node2;
-			break;
-		}
-		if (ce->ip == scandata->ip.s_addr) {
-			dlog (DEBUG1, "blsb: user %s is already in Cache", scandata->who);
-			blsb.cachehits++;
-			if (scandata->reqclient) 
-				irc_prefmsg (blsb_bot, scandata->reqclient, "User %s is already in Cache", scandata->who);
-			return 3;
-		}
-		node = list_next(cache, node);
-	}
-#endif
-	return 0;
-}
-
 ModuleEvent module_events[] = 
 {
 	{ EVENT_NICKIP, 	ss_event_signon, EVENT_FLAG_EXCLUDE_ME},
@@ -329,18 +312,27 @@ ModuleEvent module_events[] =
 
 
 void dnsbl_callback(void *data, adns_answer *a) {
-	Client *client = (Client *)data;
-	int len;
+	scanclient *sc = (scanclient *)data;
+	int len, i, ri;
 	char *show;
+
 	if (a && a->nrrs > 0) {
 		adns_rr_info(a->type, 0, 0, &len, 0, 0);
-printf("%d\n", len);
-		if (!adns_rr_info(a->type, 0, 0, &len, 0, &show)) {
-			printf("DNSBL lookup for %s resolved %s\n", client->name, show);
-			free(show);
-		} else {
-			printf("didn't work\n");
+		for(i = 0; i < a->nrrs;  i++) {
+			ri = adns_rr_info(a->type, 0, 0, 0, a->rrs.bytes +i*len, &show);
+			if (!ri) {
+				if (blsb.verbose) CommandReport(blsb_bot, "%s exists in %s blacklist: %s", sc->user->name, sc->domain->name, show);
+				if (sc->check) irc_prefmsg(blsb_bot, sc->check, "%s exists in %s blacklist: %s", sc->user->name, sc->domain->name, show);
+				/* XXX AKILL */
+			} else {
+				nlog(LOG_WARNING, "DNS error %s", adns_strerror(ri));
+			}
+			ns_free(show);
 		}
+	} else {
+		if (blsb.verbose) CommandReport(blsb_bot, "%s does not exist in %s blacklist", sc->user->name, sc->domain->name);
+		if (sc->check) irc_prefmsg(blsb_bot, sc->check, "%s does not exist in %s blacklist", sc->user->name, sc->domain->name);
+		dlog(DEBUG3, "No Record for %s", sc->lookup);
 	}
 
 }
@@ -353,7 +345,7 @@ static int ss_event_signon (CmdParams* cmdparams)
 	lnode_t *node;
 	unsigned char a, b, c, d;
 	int buflen;
-	char *buf;
+	scanclient *sc;
 	
 	SET_SEGV_LOCATION();
 	
@@ -374,18 +366,23 @@ static int ss_event_signon (CmdParams* cmdparams)
          while (node) {
          	dl = lnode_get(node);
 	         buflen = 18 + strlen(dl->domain);
-	         buf = malloc(buflen * sizeof(*buf));
-	         ircsnprintf(buf, buflen, "%d.%d.%d.%d.%s", d, c, b, a, dl->domain);
-	         printf("lookup %s\n", buf);
+	         sc = os_malloc(sizeof(scanclient));
+	         sc->check = NULL;
+	         sc->user = cmdparams->source;
+	         sc->domain = dl;
+	         sc->lookup = os_malloc(buflen);
+	         ircsnprintf(sc->lookup, buflen, "%d.%d.%d.%d.%s", d, c, b, a, dl->domain);
 	         switch (dl->type) {
 	         	case 1:	/* TXT record */
-			         dns_lookup(buf, adns_r_txt, dnsbl_callback, cmdparams->source);
+			         dns_lookup(sc->lookup, adns_r_txt, dnsbl_callback, sc);
 			         break;
+			case 2: /* A record */
+				dns_lookup(sc->lookup, adns_r_a, dnsbl_callback, sc);
+				break;
 			default:
 				nlog(LOG_WARNING, "Unknown Type for DNS BL %s", dl->name);
 				break;
 		}
-	         free(buf);
 	         node = list_next(blsb.domains, node);
 	}
 
@@ -406,10 +403,6 @@ int ModInit( void )
 	int i;
 	dom_list *dl;
 	ModuleConfig (blsb_settings);
-	/* we have to be careful here. Currently, we have 7 sockets that get opened per connection. Soooo.
-	*  we check that MAX_SCANS is not greater than the maxsockets available / 7
-	*  this way, we *shouldn't* get problems with running out of sockets 
-	*/
 	me.want_nickip = 1;
 	blsb.domains = list_create(-1);
 	DBAFetchRows("domains", load_dom);
