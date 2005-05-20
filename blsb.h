@@ -72,10 +72,10 @@ extern const char *blsb_help_set_akilltime [];
 extern const char *blsb_help_set_cachetime [];
 extern const char *blsb_help_set_verbose [];
 extern const char *blsb_help_set_exclusions[];
-extern const char *blsb_help_domains_oneline[];
+extern const char blsb_help_domains_oneline[];
 extern const char *blsb_help_domains[];
 extern const char *blsb_about[];
 extern const char *blsb_help_check[];
-extern const char *blsb_help_check_oneline[];
+extern const char blsb_help_check_oneline[];
 
 #endif /* blsb_H */
