@@ -403,7 +403,6 @@ int ModInit( void )
 	int i;
 	dom_list *dl;
 	ModuleConfig (blsb_settings);
-	me.want_nickip = 1;
 	blsb.domains = list_create(-1);
 	DBAFetchRows("domains", load_dom);
 	if (list_count(blsb.domains) == 0) {
