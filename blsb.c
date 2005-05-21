@@ -106,6 +106,12 @@ static BotInfo blsb_botinfo =
 	blsb_settings,
 };
 
+ModuleEvent module_events[] = 
+{
+	{ EVENT_NICKIP, 	ss_event_signon, EVENT_FLAG_EXCLUDE_ME},
+	{ EVENT_NULL, 	NULL}
+};
+
 int blsb_cmd_domains_list (CmdParams* cmdparams) 
 {
 	dom_list *dl;
@@ -297,14 +303,7 @@ int ModSynch (void)
 	if( blsb.verbose )
 		irc_chanalert (blsb_bot, "Black List Scanning bot has started");
 	return NS_SUCCESS;
-};
-
-ModuleEvent module_events[] = 
-{
-	{ EVENT_NICKIP, 	ss_event_signon, EVENT_FLAG_EXCLUDE_ME},
-	{ EVENT_NULL, 	NULL}
-};
-
+}
 
 void dnsbl_callback(void *data, adns_answer *a) {
 	scanclient *sc = (scanclient *)data;

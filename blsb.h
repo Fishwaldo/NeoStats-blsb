@@ -67,10 +67,10 @@ typedef struct scanclient {
 
 
 /* blsb_help.c */
-extern const char *blsb_help_set_akill [];
-extern const char *blsb_help_set_akilltime [];
-extern const char *blsb_help_set_cachetime [];
-extern const char *blsb_help_set_verbose [];
+extern const char *blsb_help_set_akill[];
+extern const char *blsb_help_set_akilltime[];
+extern const char *blsb_help_set_cachetime[];
+extern const char *blsb_help_set_verbose[];
 extern const char *blsb_help_set_exclusions[];
 extern const char blsb_help_domains_oneline[];
 extern const char *blsb_help_domains[];
