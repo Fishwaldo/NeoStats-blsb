@@ -31,7 +31,6 @@
 #include "blsb.h"
 
 Bot *blsb_bot;
-int do_set_cb (CmdParams *cmdparams, SET_REASON reason);
 static int ss_event_signon (CmdParams* cmdparams);
 int blsb_cmd_domains (CmdParams* cmdparams);
 int blsb_cmd_check (CmdParams* cmdparams);
@@ -86,10 +85,10 @@ static bot_cmd blsb_commands[]=
 
 static bot_setting blsb_settings[]=
 {
-	{"AKILL",	&blsb.doakill,		SET_TYPE_BOOLEAN,	0,	0,	NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_akill,	do_set_cb, (void*)1 	},	
-	{"AKILLTIME",	&blsb.akilltime,		SET_TYPE_INT,	0,	20736000,NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_akilltime,	do_set_cb, (void*)86400 	},
-	{"CACHETIME",	&blsb.cachetime,		SET_TYPE_INT,	0,	86400,	NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_cachetime,	do_set_cb, (void*)3600 	},
-	{"VERBOSE",	&blsb.verbose,		SET_TYPE_BOOLEAN,	0,	0,	NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_verbose,	do_set_cb, (void*)1 	},
+	{"AKILL",	&blsb.doakill,		SET_TYPE_BOOLEAN,	0,	0,	NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_akill,	NULL, (void*)1 	},	
+	{"AKILLTIME",	&blsb.akilltime,		SET_TYPE_INT,	0,	20736000,NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_akilltime,	NULL, (void*)86400 	},
+	{"CACHETIME",	&blsb.cachetime,		SET_TYPE_INT,	0,	86400,	NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_cachetime,	NULL, (void*)3600 	},
+	{"VERBOSE",	&blsb.verbose,		SET_TYPE_BOOLEAN,	0,	0,	NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_verbose,	NULL, (void*)1 	},
 	{"EXCLUSIONS",	&blsb.exclusions,		SET_TYPE_BOOLEAN,	0,	0,	NS_ULEVEL_ADMIN,	NULL,	blsb_help_set_exclusions,	blsb_set_exclusions_cb, (void *)0 },
 	{NULL,		NULL,			0,		0,	0, 	0,		NULL,	NULL,			NULL	},
 };
@@ -106,11 +105,6 @@ static BotInfo blsb_botinfo =
 	blsb_commands, 
 	blsb_settings,
 };
-
-int do_set_cb (CmdParams *cmdparams, SET_REASON reason) {
-
-	return NS_SUCCESS;
-}
 
 int blsb_cmd_domains_list (CmdParams* cmdparams) 
 {
@@ -239,11 +233,11 @@ int blsb_cmd_check (CmdParams* cmdparams)
 			irc_prefmsg(blsb_bot, cmdparams->source, "Invalid Nick or Host");
 			return NS_FAILURE;
 		} else {
-		         sc = os_malloc(sizeof(scanclient));
+		         sc = ns_malloc(sizeof(scanclient));
 		         sc->check = 1;
 		         sc->user = cmdparams->source;
 		         sc->domain = dl;
-		         sc->lookup = os_malloc(buflen);
+		         sc->lookup = ns_malloc(buflen);
 	         ircsnprintf(sc->lookup, buflen, "%d.%d.%d.%d.%s", d, c, b, a, dl->domain);
 #endif
 		irc_prefmsg(blsb_bot, cmdparams->source, "Can not find %s online\n", cmdparams->av[0]);
@@ -258,11 +252,11 @@ int blsb_cmd_check (CmdParams* cmdparams)
          while (node) {
          	dl = lnode_get(node);
 	         buflen = 18 + strlen(dl->domain);
-	         sc = os_malloc(sizeof(scanclient));
+	         sc = ns_malloc(sizeof(scanclient));
 	         sc->check = cmdparams->source;
 	         sc->user = user;
 	         sc->domain = dl;
-	         sc->lookup = os_malloc(buflen);
+	         sc->lookup = ns_malloc(buflen);
 	         ircsnprintf(sc->lookup, buflen, "%d.%d.%d.%d.%s", d, c, b, a, dl->domain);
 	         switch (dl->type) {
 	         	case 1:	/* TXT record */
@@ -298,9 +292,10 @@ int ModSynch (void)
 {
 	SET_SEGV_LOCATION();
 	blsb_bot = AddBot (&blsb_botinfo);
-	if(blsb.verbose) {
+	if( !blsb_bot )
+		return NS_FAILURE;
+	if( blsb.verbose )
 		irc_chanalert (blsb_bot, "Black List Scanning bot has started");
-	}
 	return NS_SUCCESS;
 };
 
@@ -358,24 +353,24 @@ static int ss_event_signon (CmdParams* cmdparams)
 	}
 
 	d = (unsigned char) (cmdparams->source->ip.s_addr >> 24) & 0xFF;
-         c = (unsigned char) (cmdparams->source->ip.s_addr >> 16) & 0xFF;
-         b = (unsigned char) (cmdparams->source->ip.s_addr >> 8) & 0xFF;
-         a = (unsigned char) (cmdparams->source->ip.s_addr & 0xFF);   
+	c = (unsigned char) (cmdparams->source->ip.s_addr >> 16) & 0xFF;
+	b = (unsigned char) (cmdparams->source->ip.s_addr >> 8) & 0xFF;
+	a = (unsigned char) (cmdparams->source->ip.s_addr & 0xFF);
 
-         node = list_first(blsb.domains);
-         while (node) {
-         	dl = lnode_get(node);
-	         buflen = 18 + strlen(dl->domain);
-	         sc = os_malloc(sizeof(scanclient));
-	         sc->check = NULL;
-	         sc->user = cmdparams->source;
-	         sc->domain = dl;
-	         sc->lookup = os_malloc(buflen);
-	         ircsnprintf(sc->lookup, buflen, "%d.%d.%d.%d.%s", d, c, b, a, dl->domain);
-	         switch (dl->type) {
-	         	case 1:	/* TXT record */
-			         dns_lookup(sc->lookup, adns_r_txt, dnsbl_callback, sc);
-			         break;
+	node = list_first(blsb.domains);
+	while (node) {
+		dl = lnode_get(node);
+		buflen = 18 + strlen(dl->domain);
+		sc = ns_malloc(sizeof(scanclient));
+		sc->check = NULL;
+		sc->user = cmdparams->source;
+		sc->domain = dl;
+		sc->lookup = ns_malloc(buflen);
+		ircsnprintf(sc->lookup, buflen, "%d.%d.%d.%d.%s", d, c, b, a, dl->domain);
+		switch (dl->type) {
+			case 1:	/* TXT record */
+				dns_lookup(sc->lookup, adns_r_txt, dnsbl_callback, sc);
+				break;
 			case 2: /* A record */
 				dns_lookup(sc->lookup, adns_r_a, dnsbl_callback, sc);
 				break;
@@ -383,7 +378,7 @@ static int ss_event_signon (CmdParams* cmdparams)
 				nlog(LOG_WARNING, "Unknown Type for DNS BL %s", dl->name);
 				break;
 		}
-	         node = list_next(blsb.domains, node);
+		node = list_next(blsb.domains, node);
 	}
 
 	return NS_SUCCESS;
@@ -407,10 +402,11 @@ int ModInit( void )
 	DBAFetchRows("domains", load_dom);
 	if (list_count(blsb.domains) == 0) {
 		for (i = 0; stddomlist[i].type != 0; i++) {
-			dl = os_malloc(sizeof(dom_list));
+			dl = ns_malloc(sizeof(dom_list));
 			strlcpy(dl->name, stddomlist[i].name, BUFSIZE);
 			strlcpy(dl->domain, stddomlist[i].domain, BUFSIZE);
 			dl->type = stddomlist[i].type;
+			/* Isn't this store pointless since we just loaded the entry anyway??? */
 			DBAStore("domains", dl->name, (void *)dl, sizeof(dom_list));
 			lnode_create_append(blsb.domains, dl);
 		}
