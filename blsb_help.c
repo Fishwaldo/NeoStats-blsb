@@ -23,17 +23,12 @@
 
 #include "neostats.h"
 
-const char blsb_help_domains_oneline[] = "Manage the Blacklist Domains";
+const char blsb_help_domains_add_oneline[] = "Add to the blacklist domains";
+const char blsb_help_domains_del_oneline[] = "Delete from the blacklist domains";
+const char blsb_help_domains_list_oneline[] = "List the blacklist domains";
 const char blsb_help_status_oneline[] = "View blsb state information";
 const char blsb_help_remove_oneline[] = "Remove an akill set by blsb";
 const char blsb_help_check_oneline[] = "Scan a selected user";
-const char blsb_help_ports_oneline[] = "Allows you to customize the ports scanned";
-const char blsb_help_set_oneline[] = "Change blsb configuration options";
-
-const char *blsb_help_domains[] = {
-	"help",
-	NULL
-};
 
 const char *blsb_about[] = {
 	"\2Open Proxy Scanning Bot Information\2",
@@ -66,67 +61,9 @@ const char *blsb_help_status[] = {
 	NULL
 };
 
-const char *blsb_help_set_doscan [] = {
-	"\2SCAN <ON|OFF>\2",
-	"Disables the proxy scan and only do a lookup in the DNS",
-	"blacklist to see if this host is listed as an open proxy",
-	NULL
-};
-
 const char *blsb_help_set_akill [] = {
 	"\2AKILL <ON|OFF>\2",
-	" ",
-	NULL
-};
-
-const char *blsb_help_set_targetip [] = {
-	"\2TARGETIP <ip>\2",
-	"IP address of server we try to make the proxies connect to",
-	NULL
-};
-
-const char *blsb_help_set_targetport [] = {
-	"\2TARGETPORT <port>\2",
-	"IRCd port number we try to make proxies connect to.",
-	NULL
-};
-
-const char *blsb_help_set_opmdomain [] = {
-	"\2OPMDOMAIN <domain>\2",
-	"Domain used for blacklists.",
-	"This setting should not be changed unless you know the",
-	"effects in full",
-	NULL
-};
-
-const char *blsb_help_set_maxbytes [] = {
-	"\2MAXBYTES <max>\2",
-	"Maximum number of bytes we receive from a proxy before disconnecting",
-	"This setting should not be changed unless you know the",
-	"effects in full",
-	NULL
-};
-
-const char *blsb_help_set_timeout [] = {
-	"\2TIMEOUT <time>\2",
-	"Time we wait for a proxy to respond to our servers before",
-	"disconnecting and assuming its not an open proxy.",
-	"This setting should not be changed unless you know the",
-	"effects in full",
-	NULL
-};
-
-const char *blsb_help_set_openstring [] = {
-	"\2OPENSTRING <string>\2",
-	"The string we expect to see if there is an open proxy",
-	"This setting should not be changed unless you know the",
-	"effects in full",
-	NULL
-};
-
-const char *blsb_help_set_scanmsg [] = {
-	"\2SCANMSG <msg>\2",
-	"Message sent to a user when we scan their hosts",
+	"Whether to issue an akill for positive lookups",
 	NULL
 };
 
@@ -154,35 +91,24 @@ const char *blsb_help_set_exclusions[] = {
 	NULL
 };
 
-const char *blsb_help_ports[] = {
-	"Syntax: \2PORTS <LIST>\2",
-	"        \2PORTS <ADD> <type> <port>\2",
-	"        \2PORTS <DEL> <index>\2",
+const char *blsb_help_domains_add[] = {
+	"Syntax: \2ADD <NAME> <TYPE> <DOMAIN>\2",
 	"",
-	"This command lets you view or manipulate the ports",
-	"and proxy types scanned when users connect to your",
-	"IRC network. By Default, blsb scans some default Ports",
-	"but you may wish to update this list with some additional",
-	"protocols and ports custom to your network"
+	"\2ADD\2 will add a domain to the blacklist lookup list",
+	NULL
+};
+
+const char *blsb_help_domains_del[] = {
+	"Syntax: \2DEL <index>\2",
 	"",
-	"\2LIST\2 will list the current ports and protocols scanned",
-	"and a ID number for use in removing entries.",
+	"Delete entry <index> from the list of domains used for lookups",
+	NULL
+};
+
+const char *blsb_help_domains_list[] = {
+	"Syntax: \2LIST\2",
 	"",
-	"\2ADD\2 will add an entry of <type> running on port <port>",
-	"to the port list.",
-	"<type> can be either:", 
-	"       HTTP",
-	"       HTTPPOST",
-	"       SOCKS4",
-	"       SOCKS5",
-	"       WINGATE",
-	"       ROUTER",
-	"and port can be any valid port number. The new port is scanned",
-	"straight away",
-	"",
-	"\2DEL\2 will delete entry <index> from the list of",
-	"ports. Requires a Restart of blsb to become effective. Alternatively",
-	"Reloading the blsb module will make this effective",
+	"List the current domains used for lookups",
 	NULL
 };
 

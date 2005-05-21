@@ -31,7 +31,10 @@
 #include "blsb.h"
 
 Bot *blsb_bot;
-static int ss_event_signon (CmdParams* cmdparams);
+static int ss_event_signon( CmdParams* cmdparams );
+int blsb_cmd_domains_list( CmdParams* cmdparams );
+int blsb_cmd_domains_add( CmdParams* cmdparams );
+int blsb_cmd_domains_del( CmdParams* cmdparams );
 int blsb_cmd_domains (CmdParams* cmdparams);
 int blsb_cmd_check (CmdParams* cmdparams);
 void dnsbl_callback(void *data, adns_answer *a);
@@ -56,7 +59,7 @@ const char *blsb_copyright[] = {
  */
 ModuleInfo module_info = {
 	"BLSB",
-	"An Black List Scanning Bot",
+	"Black List Scanning Bot",
 	blsb_copyright,
 	blsb_about,
 	NEOSTATS_VERSION,
@@ -78,7 +81,9 @@ static int blsb_set_exclusions_cb( CmdParams *cmdparams, SET_REASON reason )
 
 static bot_cmd blsb_commands[]=
 {
-	{"DOMAINS",	blsb_cmd_domains,		1,	NS_ULEVEL_ADMIN,	blsb_help_domains, blsb_help_domains_oneline},
+	{"ADD",		blsb_cmd_domains_add,	3,	NS_ULEVEL_ADMIN,	blsb_help_domains_add, blsb_help_domains_add_oneline},
+	{"DEL",		blsb_cmd_domains_del,	1,	NS_ULEVEL_ADMIN,	blsb_help_domains_del, blsb_help_domains_del_oneline},
+	{"LIST",	blsb_cmd_domains_list,	0,	NS_ULEVEL_ADMIN,	blsb_help_domains_list, blsb_help_domains_list_oneline},
 	{"CHECK",	blsb_cmd_check,		1,	NS_ULEVEL_OPER,	blsb_help_check,	 blsb_help_check_oneline},
 	{NULL,		NULL,			0, 	0,		NULL, 		NULL}
 };
@@ -207,18 +212,6 @@ int blsb_cmd_domains_del (CmdParams* cmdparams)
 		irc_prefmsg (blsb_bot, cmdparams->source, "Error, Out of Range");
 	}
 	return NS_SUCCESS;
-}
-
-int blsb_cmd_domains (CmdParams* cmdparams) 
-{
-	if (!ircstrcasecmp (cmdparams->av[0], "LIST")) {
-		return blsb_cmd_domains_list (cmdparams);
-	} else if (!ircstrcasecmp (cmdparams->av[0], "ADD")) {
-		return blsb_cmd_domains_add (cmdparams);
-	} else if (!ircstrcasecmp (cmdparams->av[0], "DEL")) {
-		return blsb_cmd_domains_del (cmdparams);
-	}
-	return NS_ERR_SYNTAX_ERROR;
 }
 
 int blsb_cmd_check (CmdParams* cmdparams) 
