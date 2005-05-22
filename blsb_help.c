@@ -23,10 +23,10 @@
 
 #include "neostats.h"
 
-const char blsb_help_domains_add_oneline[] = "Add to the blacklist domains";
-const char blsb_help_domains_del_oneline[] = "Delete from the blacklist domains";
-const char blsb_help_domains_list_oneline[] = "List the blacklist domains";
-const char blsb_help_status_oneline[] = "View blsb state information";
+const char blsb_help_add_oneline[] = "Add to the blacklist domains";
+const char blsb_help_del_oneline[] = "Delete from the blacklist domains";
+const char blsb_help_list_oneline[] = "List the blacklist domains";
+const char blsb_help_status_oneline[] = "View blsb status";
 const char blsb_help_remove_oneline[] = "Remove an akill set by blsb";
 const char blsb_help_check_oneline[] = "Scan a selected user";
 
@@ -61,6 +61,37 @@ const char *blsb_help_status[] = {
 	NULL
 };
 
+const char *blsb_help_add[] = {
+	"Syntax: \2ADD <NAME> <TYPE> <DOMAIN>\2",
+	"",
+	"\2ADD\2 will add a domain to the blacklist lookup list",
+	NULL
+};
+
+const char *blsb_help_del[] = {
+	"Syntax: \2DEL <index>\2",
+	"",
+	"Delete entry <index> from the list of domains used for lookups",
+	NULL
+};
+
+const char *blsb_help_list[] = {
+	"Syntax: \2LIST\2",
+	"",
+	"List the current domains used for lookups",
+	NULL
+};
+
+const char *blsb_help_remove[] = {
+	"Syntax: \2REMOVE <ip|hostname>\2",
+	"",
+	"Remove akills that have been set by blsb.",
+	"",
+	"<ip|hostname> is the hostname listed in your akill list",
+	"(usually found with /stats a)",
+	NULL
+};
+
 const char *blsb_help_set_akill [] = {
 	"\2AKILL <ON|OFF>\2",
 	"Whether to issue an akill for positive lookups",
@@ -88,36 +119,5 @@ const char *blsb_help_set_verbose [] = {
 const char *blsb_help_set_exclusions[] = {
 	"\2EXCLUSIONS <ON|OFF>\2",
 	"Use global exclusion list in addition to local exclusion list",
-	NULL
-};
-
-const char *blsb_help_domains_add[] = {
-	"Syntax: \2ADD <NAME> <TYPE> <DOMAIN>\2",
-	"",
-	"\2ADD\2 will add a domain to the blacklist lookup list",
-	NULL
-};
-
-const char *blsb_help_domains_del[] = {
-	"Syntax: \2DEL <index>\2",
-	"",
-	"Delete entry <index> from the list of domains used for lookups",
-	NULL
-};
-
-const char *blsb_help_domains_list[] = {
-	"Syntax: \2LIST\2",
-	"",
-	"List the current domains used for lookups",
-	NULL
-};
-
-const char *blsb_help_remove[] = {
-	"Syntax: \2REMOVE <ip|hostname>\2",
-	"",
-	"Remove akills that have been set by blsb.",
-	"",
-	"<ip|hostname> is the hostname listed in your akill list",
-	"(usually found with /stats a)",
 	NULL
 };

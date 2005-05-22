@@ -22,15 +22,14 @@
 */
 
 
-#ifndef blsb_H
-#define blsb_H
+#ifndef BLSB_H
+#define BLSB_H
 
 #ifdef WIN32
 #include "modconfigwin32.h"
-#else
+#else /* WIN32 */
 #include "modconfig.h"
-#endif
-
+#endif /* WIN32 */
 
 extern Bot *blsb_bot;
 
@@ -65,21 +64,20 @@ typedef struct scanclient {
 	char *lookup;
 } scanclient;
 
-
 /* blsb_help.c */
+extern const char *blsb_about[];
+extern const char blsb_help_add_oneline[];
+extern const char blsb_help_del_oneline[];
+extern const char blsb_help_list_oneline[];
+extern const char blsb_help_check_oneline[];
+extern const char *blsb_help_add[];
+extern const char *blsb_help_del[];
+extern const char *blsb_help_list[];
+extern const char *blsb_help_check[];
 extern const char *blsb_help_set_akill[];
 extern const char *blsb_help_set_akilltime[];
 extern const char *blsb_help_set_cachetime[];
 extern const char *blsb_help_set_verbose[];
 extern const char *blsb_help_set_exclusions[];
-extern const char blsb_help_domains_add_oneline[];
-extern const char blsb_help_domains_del_oneline[];
-extern const char blsb_help_domains_list_oneline[];
-extern const char *blsb_help_domains_add[];
-extern const char *blsb_help_domains_del[];
-extern const char *blsb_help_domains_list[];
-extern const char *blsb_about[];
-extern const char *blsb_help_check[];
-extern const char blsb_help_check_oneline[];
 
-#endif /* blsb_H */
+#endif /* BLSB_H */
