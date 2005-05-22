@@ -25,11 +25,7 @@
 #ifndef BLSB_H
 #define BLSB_H
 
-#ifdef WIN32
-#include "modconfigwin32.h"
-#else /* WIN32 */
-#include "modconfig.h"
-#endif /* WIN32 */
+#include MODULECONFIG
 
 typedef enum BL_LOOKUP_TYPE
 {
