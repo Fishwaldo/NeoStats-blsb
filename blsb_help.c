@@ -28,7 +28,7 @@ const char blsb_help_del_oneline[] = "Delete from the blacklist domains";
 const char blsb_help_list_oneline[] = "List the blacklist domains";
 const char blsb_help_status_oneline[] = "View blsb status";
 const char blsb_help_remove_oneline[] = "Remove an akill set by blsb";
-const char blsb_help_check_oneline[] = "Scan a selected user";
+const char blsb_help_check_oneline[] = "Scan a user";
 
 const char *blsb_about[] = {
 	"\2Open Proxy Scanning Bot Information\2",
@@ -47,31 +47,34 @@ const char *blsb_about[] = {
 const char *blsb_help_check[] = {
 	"Syntax: \2CHECK <nick|ip|hostname>\2",
 	"",
-	"This option will scan either a user connected to your",
-	"network, an IP address, or Hostname for Insecure proxies,",
-	"and report the status to you. If an Insecure proxy is",
-	"found, the host will be banned from the network",
+	"Scan a user connected to your network, an IP address, or a",
+	"hostname for insecure proxies and report the status. Any",
+	"insecure proxy found, will be banned from the network.",
 	NULL
 };
 
 const char *blsb_help_status[] = {
 	"Syntax: \2STATUS\2",
 	"",
-	"Display status of the open proxy scanning bot",
+	"Display status of the blacklist lookup service",
 	NULL
 };
 
 const char *blsb_help_add[] = {
-	"Syntax: \2ADD <NAME> <TYPE> <DOMAIN>\2",
+	"Syntax: \2ADD <domain> <type> <name>\2",
 	"",
-	"\2ADD\2 will add a domain to the blacklist lookup list",
+	"Add a domain to the blacklist lookup list",
+	"<type> 1 for TXT record lookups",
+	"       2 for A record lookups",
+	"<domain> domain for lookups, e.g. opm.blitzed.org",
+	"<name> name to assign to this entry, e.g. Blitzed OPM",
 	NULL
 };
 
 const char *blsb_help_del[] = {
-	"Syntax: \2DEL <index>\2",
+	"Syntax: \2DEL <domain>\2",
 	"",
-	"Delete entry <index> from the list of domains used for lookups",
+	"Delete entry matching <domain> from the list of blacklist domains",
 	NULL
 };
 
@@ -86,7 +89,6 @@ const char *blsb_help_remove[] = {
 	"Syntax: \2REMOVE <ip|hostname>\2",
 	"",
 	"Remove akills that have been set by blsb.",
-	"",
 	"<ip|hostname> is the hostname listed in your akill list",
 	"(usually found with /stats a)",
 	NULL
@@ -100,7 +102,7 @@ const char *blsb_help_set_akill [] = {
 
 const char *blsb_help_set_akilltime [] = {
 	"\2AKILLTIME <time>\2",
-	"How long the user will be banned from the network for",
+	"How long the user will be banned from the network",
 	NULL
 };
 

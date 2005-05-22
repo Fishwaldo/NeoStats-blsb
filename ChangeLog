@@ -1,5 +1,6 @@
 Black List Scanning Bot Module for NeoStats Changelog.
 ==============================================================================
 3.0.a3-dev - Fish (F) & Mark (M)
- - Simplify command paths (M)
- - Initial Version (F)
+ - Reorder add command so name works. (M)
+ - Simplify command paths. (M)
+ - Initial Version. (F)

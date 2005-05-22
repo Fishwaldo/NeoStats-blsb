@@ -24,13 +24,12 @@
 /*  TODO:
  *  - Akill support.
  *  - Buffer sizes for name and domain should not need to be so big
- *    so should be made a more appropriate size.
- *  - If a remove akill command is added, it must check whether an akill.
+ *    and should be made a more appropriate size.
+ *  - If a remove akill command is added, it must check whether an akill
  *    was added by blsb before removing it otherwise blsb becomes a way
- *    for opers to remove any akill on the network.
- *  - Since name and domain must both be unique, suggest that DEL takes
- *    domain as a parameter for delete rather than an index. More intuitive
- *    for users.
+ *    for opers to remove any akill on the network including those they
+ *    may not normally have access to.
+ *  - Do we need cache support?.
  */
 
 #include "neostats.h"
@@ -42,7 +41,6 @@
 #endif
 #include "blsb.h"
 
-Bot *blsb_bot;
 static int event_nickip( CmdParams* cmdparams );
 static int blsb_cmd_list( CmdParams* cmdparams );
 static int blsb_cmd_add( CmdParams* cmdparams );
@@ -51,25 +49,32 @@ static int blsb_cmd_check( CmdParams* cmdparams );
 static int blsb_set_exclusions_cb( CmdParams *cmdparams, SET_REASON reason );
 void dnsbl_callback( void *data, adns_answer *a );
 
-static dom_list stddomlist[] = {
-	{"Blitzed OPM", "opm.blitzed.org", 1},
-	{"Secure IRC", "bl.irc-chat.net", 1},
-	{"Tor Exit Server", "tor.dnsbl.sectoor.de", 1},
+static list_t *cache;
+Bot *blsb_bot;
+
+static dom_list stddomlist[] =
+{
+	{"Blitzed OPM", "opm.blitzed.org", BL_LOOKUP_TXT_RECORD},
+	{"Secure IRC", "bl.irc-chat.net", BL_LOOKUP_TXT_RECORD},
+	{"Tor Exit Server", "tor.dnsbl.sectoor.de", BL_LOOKUP_TXT_RECORD},
 	{"", "", 0}
 };
 
 /** Copyright info */
-const char *blsb_copyright[] = {
+const char *blsb_copyright[] =
+{
 	"Copyright (c) 1999-2005, NeoStats",
 	"http://www.neostats.net/",
 	NULL
 };
 
 /** Module Info definition 
- *  version information about our module
- *  This structure is required for your module to load and run on NeoStats
+ *	This describes the module to the NeoStats core and provides information
+ *  to end users when modules are queried.
+ *  The structure is required but some fields are optional.
  */
-ModuleInfo module_info = {
+ModuleInfo module_info =
+{
 	"BLSB",
 	"Black List Scanning Bot",
 	blsb_copyright,
@@ -114,6 +119,10 @@ static BotInfo blsb_botinfo =
 	blsb_settings,
 };
 
+/** Module event list
+ *  What events we will act on
+ */
+
 ModuleEvent module_events[] = 
 {
 	{ EVENT_NICKIP, event_nickip, EVENT_FLAG_EXCLUDE_ME},
@@ -131,7 +140,7 @@ ModuleEvent module_events[] =
  *  @return pointer to newly allocated entry
  */
 
-static dom_list *new_bldomain( char *name, char *domain, int type )
+static dom_list *new_bldomain( char *name, char *domain, BL_LOOKUP_TYPE type )
 {
 	dom_list *dl;
 
@@ -142,198 +151,6 @@ static dom_list *new_bldomain( char *name, char *domain, int type )
 	lnode_create_append( blsb.domains, dl );
 	DBAStore( "domains", dl->name, (void *)dl, sizeof( dom_list ) );
 	return dl;
-}
-
-/** @brief blsb_cmd_list
- *
- *  LIST command handler
- *  List entries in the blacklist domain list
- *
- *  @param cmdparam struct
- *
- *  @return NS_SUCCESS if suceeds else result of command
- */
-
-int blsb_cmd_list( CmdParams* cmdparams )
-{
-	dom_list *dl;
-	int i;
-	lnode_t *lnode;
-
-	lnode = list_first(blsb.domains);
-	i = 1;
-	irc_prefmsg (blsb_bot, cmdparams->source, "BlackList domains:");
-	while (lnode) {
-		dl = lnode_get(lnode);
-		irc_prefmsg (blsb_bot, cmdparams->source, "%d) %s Domain: %s Type: %d", i, dl->name, dl->domain, dl->type);
-		++i;
-		lnode = list_next(blsb.domains, lnode);
-	}
-	irc_prefmsg (blsb_bot, cmdparams->source, "End of list.");
-	CommandReport(blsb_bot, "%s requested blacklist domain list", cmdparams->source->name);
-	return NS_SUCCESS;
-}
-
-/** @brief blsb_cmd_add
- *
- *  ADD command handler
- *  Add an entry to the blacklist domain list
- *
- *  @param cmdparam struct
- *		cmdparams->av[0] = name
- *		cmdparams->av[1] = domain
- *		cmdparams->av[2] = type
- *
- *  @return NS_SUCCESS if suceeds else result of command
- */
-
-int blsb_cmd_add( CmdParams* cmdparams )
-{
-	dom_list *dl;
-	lnode_t *lnode;
-	int type;
-
-	if (list_isfull(blsb.domains)) {
-		irc_prefmsg (blsb_bot, cmdparams->source, "Error, domain list is full");
-		return NS_FAILURE;
-	}
-	type = atoi(cmdparams->av[2]);
-	if (!type) {
-		irc_prefmsg (blsb_bot, cmdparams->source, "type field does not contain a valid type");
-		return NS_FAILURE;
-	}
-	/* XXX do a initial lookup on the domain to check it exists? */
-
-	/* check for duplicates */
-	lnode = list_first(blsb.domains);
-	while (lnode) {
-		dl = lnode_get(lnode);
-		if ((!ircstrcasecmp(dl->name, cmdparams->av[1])) || (!ircstrcasecmp(dl->domain, cmdparams->av[3]))) {
-			irc_prefmsg (blsb_bot, cmdparams->source, "%s already has an entry", cmdparams->av[1]);
-			return NS_SUCCESS;
-		}
-		lnode = list_next(blsb.domains, lnode);
-	}
-	dl = new_bldomain( cmdparams->av[1], cmdparams->av[3], type );
-	irc_prefmsg (blsb_bot, cmdparams->source, "Added domain %s(%s) as type %d", dl->name, dl->domain, dl->type);
-	CommandReport(blsb_bot, "%s added domain %s(%s) as type %d", cmdparams->source->name, dl->name, dl->domain, dl->type);
-	return NS_SUCCESS;
-}
-
-/** @brief blsb_cmd_del
- *
- *  DEL command handler
- *  deletes an entry from the blacklist domain list
- *
- *  @param cmdparam struct
- *		cmdparams->av[0] = entry index
- *
- *  @return NS_SUCCESS if suceeds else result of command
- */
-
-int blsb_cmd_del( CmdParams* cmdparams ) 
-{
-	dom_list *dl;
-	int i, entryindex;
-	lnode_t *lnode;
-
-	entryindex = atoi( cmdparams->av[1] );
-	if ( entryindex == 0) {
-		irc_prefmsg (blsb_bot, cmdparams->source, "Error, Out of Range");
-		return NS_FAILURE;
-	}
-	lnode = list_first(blsb.domains);
-	i = 1;
-	while (lnode) {
-		if (i == entryindex) {
-			/* delete the entry */
-			dl = lnode_get(lnode);
-			list_delete(blsb.domains, lnode);
-			lnode_destroy(lnode);
-			irc_prefmsg (blsb_bot, cmdparams->source, "Deleted Blacklist Domain %s (%s) out of domains list", dl->name, dl->domain);
-			CommandReport(blsb_bot, "%s deleted Blacklist Domain %s (%s) out of domains list", cmdparams->source->name, dl->name, dl->domain);
-			DBADelete("domains", dl->name);
-			ns_free(dl);
-			return NS_SUCCESS;
-		}
-		++i;
-		lnode = list_next(blsb.domains, lnode);
-	}		
-	/* if we get here, then we can't find the entry */
-	irc_prefmsg (blsb_bot, cmdparams->source, "Error, Can't find entry %d. /msg %s domains list", entryindex, blsb_bot->name);
-	return NS_FAILURE;
-}
-
-/** @brief blsb_cmd_check
- *
- *  CHECK command handler
- *
- *  @param cmdparam struct
- *
- *  @return NS_SUCCESS if suceeds else result of command
- */
-
-int blsb_cmd_check( CmdParams* cmdparams )
-{
-	Client *user;
-	lnode_t *node;
-	dom_list *dl;
-	scanclient *sc = NULL;
-	unsigned char a, b, c, d;
-	int buflen;
-	
-	
-	user = FindUser(cmdparams->av[0]);
-	if (!user) {
-#if 0
-/* XXX TODO: Lookup Hostname */
-		if (!ValidateHost(cmdparams->av[0]) {
-			irc_prefmsg(blsb_bot, cmdparams->source, "Invalid Nick or Host");
-			return NS_FAILURE;
-		} else {
-			sc = ns_malloc(sizeof(scanclient));
-			sc->check = 1;
-			sc->user = cmdparams->source;
-			sc->domain = dl;
-			sc->lookup = ns_malloc(buflen);
-			ircsnprintf(sc->lookup, buflen, "%d.%d.%d.%d.%s", d, c, b, a, dl->domain);
-#endif
-		irc_prefmsg(blsb_bot, cmdparams->source, "Can not find %s online\n", cmdparams->av[0]);
-		return NS_ERR_SYNTAX_ERROR;
-	}
-	d = (unsigned char) (user->ip.s_addr >> 24) & 0xFF;
-	c = (unsigned char) (user->ip.s_addr >> 16) & 0xFF;
-	b = (unsigned char) (user->ip.s_addr >> 8) & 0xFF;
-	a = (unsigned char) (user->ip.s_addr & 0xFF);   
-
-	node = list_first(blsb.domains);
-	while (node) {
-		dl = lnode_get(node);
-		buflen = 18 + strlen(dl->domain);
-		sc = ns_malloc(sizeof(scanclient));
-		sc->check = cmdparams->source;
-		sc->user = user;
-		sc->domain = dl;
-		sc->lookup = ns_malloc(buflen);
-		ircsnprintf(sc->lookup, buflen, "%d.%d.%d.%d.%s", d, c, b, a, dl->domain);
-		switch (dl->type) {
-			case 1:	/* TXT record */
-				dns_lookup(sc->lookup, adns_r_txt, dnsbl_callback, sc);
-				break;
-			case 2: /* A record */
-				dns_lookup(sc->lookup, adns_r_a, dnsbl_callback, sc);
-				break;
-			default:
-				nlog(LOG_WARNING, "Unknown Type for DNS BL %s", dl->name);
-				break;
-		}
-        node = list_next(blsb.domains, node);
-	}
-	if (sc) {
-		irc_prefmsg (blsb_bot, cmdparams->source, "Checking %s (%d.%d.%d.%d) against DNS Blacklists", sc->user->name, a, b, c, d);
-		CommandReport(blsb_bot, "%s is checking %s (%d.%d.%d.%d) against DNS Blacklists", cmdparams->source->name, sc->user->name, a, b, c, d);
-	}
-	return NS_SUCCESS;
 }
 
 /** @brief dnsbl_callback
@@ -357,19 +174,238 @@ void dnsbl_callback(void *data, adns_answer *a)
 		for(i = 0; i < a->nrrs;  i++) {
 			ri = adns_rr_info(a->type, 0, 0, 0, a->rrs.bytes +i*len, &show);
 			if (!ri) {
-				if (blsb.verbose) CommandReport(blsb_bot, "%s exists in %s blacklist: %s", sc->user->name, sc->domain->name, show);
-				if (sc->check) irc_prefmsg(blsb_bot, sc->check, "%s exists in %s blacklist: %s", sc->user->name, sc->domain->name, show);
+				if (blsb.verbose) 
+					irc_chanalert( blsb_bot, "%s exists in %s blacklist: %s", sc->user->name, sc->domain->name, show );
+				if (sc->check) 
+					irc_prefmsg(blsb_bot, sc->check, "%s exists in %s blacklist: %s", sc->user->name, sc->domain->name, show);
 				/* XXX AKILL */
 			} else {
 				nlog(LOG_WARNING, "DNS error %s", adns_strerror(ri));
 			}
 			ns_free(show);
+			return;
 		}
-	} else {
-		if (blsb.verbose) CommandReport(blsb_bot, "%s does not exist in %s blacklist", sc->user->name, sc->domain->name);
-		if (sc->check) irc_prefmsg(blsb_bot, sc->check, "%s does not exist in %s blacklist", sc->user->name, sc->domain->name);
-		dlog(DEBUG3, "No Record for %s", sc->lookup);
 	}
+	if (blsb.verbose) 
+		irc_chanalert( blsb_bot, "%s does not exist in %s blacklist", sc->user->name, sc->domain->name );
+	if (sc->check) 
+		irc_prefmsg(blsb_bot, sc->check, "%s does not exist in %s blacklist", sc->user->name, sc->domain->name);
+	dlog(DEBUG3, "No Record for %s", sc->lookup);
+}
+
+/** @brief do_lookup
+ *
+ *  trigger lookups
+ *
+ *  @param Client *lookupuser
+ *  @param Client *reportuser
+ *
+ *  @return NS_SUCCESS if suceeds else result of command
+ */
+scanclient *do_lookup( Client *lookupuser, Client *reportuser )
+{
+	static char ip[HOSTIPLEN];
+	static char reverseip[HOSTIPLEN];
+	lnode_t *node;
+	dom_list *dl;
+	scanclient *sc = NULL;
+	unsigned char a, b, c, d;
+	int buflen;
+
+	d = (unsigned char) ( lookupuser->ip.s_addr >> 24 ) & 0xFF;
+	c = (unsigned char) ( lookupuser->ip.s_addr >> 16 ) & 0xFF;
+	b = (unsigned char) ( lookupuser->ip.s_addr >> 8 ) & 0xFF;
+	a = (unsigned char) ( lookupuser->ip.s_addr & 0xFF );   
+	ircsnprintf( ip, HOSTIPLEN, "%d.%d.%d.%d", a, b, c, d );
+	ircsnprintf( reverseip, HOSTIPLEN, "%d.%d.%d.%d", d, c, b, a );
+	node = list_first( blsb.domains );
+	while( node )
+	{
+		dl = lnode_get( node);
+		/* Allocate enough for domain, ip address, additional period and NULL */
+		buflen = strlen( dl->domain ) + HOSTIPLEN + 1 + 1;
+		sc = ns_malloc( sizeof( scanclient ) );
+		sc->check = reportuser;
+		sc->user = lookupuser;
+		sc->domain = dl;
+		sc->lookup = ns_malloc( buflen );
+		strlcpy( sc->ip, ip, HOSTIPLEN );
+		strlcpy( sc->reverseip, reverseip, HOSTIPLEN );
+		ircsnprintf( sc->lookup, buflen, "%s.%s", reverseip, dl->domain );
+		switch (dl->type)
+		{
+			case BL_LOOKUP_TXT_RECORD:	/* TXT record */
+				dns_lookup( sc->lookup, adns_r_txt, dnsbl_callback, sc );
+				break;
+			case BL_LOOKUP_A_RECORD: /* A record */
+				dns_lookup( sc->lookup, adns_r_a, dnsbl_callback, sc );
+				break;
+			default:
+				nlog( LOG_WARNING, "Unknown Type for DNS BL %s", dl->name );
+				break;
+		}
+        node = list_next( blsb.domains, node );
+	}
+	return sc;
+}
+
+/** @brief blsb_cmd_list
+ *
+ *  LIST command handler
+ *  List entries in the blacklist domain list
+ *
+ *  @param cmdparam struct
+ *
+ *  @return NS_SUCCESS if suceeds else result of command
+ */
+
+int blsb_cmd_list( CmdParams* cmdparams )
+{
+	dom_list *dl;
+	lnode_t *lnode;
+
+	lnode = list_first(blsb.domains);
+	irc_prefmsg (blsb_bot, cmdparams->source, "BlackList domains:");
+	while (lnode) {
+		dl = lnode_get(lnode);
+		irc_prefmsg (blsb_bot, cmdparams->source, "%s: %s (type %d)", dl->domain, dl->name, dl->type);
+		lnode = list_next(blsb.domains, lnode);
+	}
+	irc_prefmsg (blsb_bot, cmdparams->source, "End of list.");
+	CommandReport(blsb_bot, "%s requested blacklist domain list", cmdparams->source->name);
+	return NS_SUCCESS;
+}
+
+/** @brief blsb_cmd_add
+ *
+ *  ADD command handler
+ *  Add an entry to the blacklist domain list
+ *
+ *  @param cmdparam struct
+ *		cmdparams->av[0] = domain
+ *		cmdparams->av[1] = type
+ *		cmdparams->av[2] = name
+ *
+ *  @return NS_SUCCESS if suceeds else result of command
+ */
+
+int blsb_cmd_add( CmdParams* cmdparams )
+{
+	dom_list *dl;
+	lnode_t *lnode;
+	int type;
+	char *name;
+
+	if( list_isfull( blsb.domains ) )
+	{
+		irc_prefmsg( blsb_bot, cmdparams->source, "Error, domain list is full" );
+		return NS_FAILURE;
+	}
+	type = atoi( cmdparams->av[1] );
+	if( type <= BL_LOOKUP_TYPE_MIN || type >= BL_LOOKUP_TYPE_MAX )
+	{
+		irc_prefmsg( blsb_bot, cmdparams->source, "type field does not contain a valid type" );
+		return NS_FAILURE;
+	}
+	name = joinbuf( cmdparams->av, cmdparams->ac, 2 );
+	/* XXX do a initial lookup on the domain to check it exists? */
+
+	/* check for duplicates */
+	lnode = list_first( blsb.domains );
+	while( lnode )
+	{
+		dl = lnode_get( lnode );
+		if( ( !ircstrcasecmp( dl->name, name ) ) || ( !ircstrcasecmp(dl->domain, cmdparams->av[0] ) ) )
+		{
+			irc_prefmsg( blsb_bot, cmdparams->source, "%s %s already has an entry", cmdparams->av[0], name );
+			ns_free( name );
+			return NS_SUCCESS;
+		}
+		lnode = list_next(blsb.domains, lnode);
+	}
+	dl = new_bldomain( name, cmdparams->av[0], type );
+	irc_prefmsg( blsb_bot, cmdparams->source, "Added domain %s (%s) as type %d", dl->name, dl->domain, dl->type );
+	CommandReport( blsb_bot, "%s added domain %s (%s) as type %d", cmdparams->source->name, dl->name, dl->domain, dl->type );
+	ns_free( name );
+	return NS_SUCCESS;
+}
+
+/** @brief blsb_cmd_del
+ *
+ *  DEL command handler
+ *  deletes an entry from the blacklist domain list
+ *
+ *  @param cmdparam struct
+ *		cmdparams->av[0] = domain
+ *
+ *  @return NS_SUCCESS if suceeds else result of command
+ */
+
+int blsb_cmd_del( CmdParams* cmdparams ) 
+{
+	dom_list *dl;
+	lnode_t *lnode;
+
+	lnode = list_first(blsb.domains);
+	while (lnode) {
+		dl = lnode_get(lnode);
+		if( ircstrcasecmp( dl->domain, cmdparams->av[0] ) == 0 )
+		{
+			list_delete(blsb.domains, lnode);
+			lnode_destroy(lnode);
+			irc_prefmsg (blsb_bot, cmdparams->source, "Deleted %s (%s) from blacklist domains", dl->name, dl->domain);
+			CommandReport(blsb_bot, "%s deleted %s (%s) from blacklist domains", cmdparams->source->name, dl->name, dl->domain);
+			DBADelete("domains", dl->name);
+			ns_free(dl);
+			return NS_SUCCESS;
+		}
+		lnode = list_next(blsb.domains, lnode);
+	}		
+	/* if we get here, then we can't find the entry */
+	irc_prefmsg (blsb_bot, cmdparams->source, "Error, no entry for %", cmdparams->av[0]);
+	return NS_FAILURE;
+}
+
+/** @brief blsb_cmd_check
+ *
+ *  CHECK command handler
+ *
+ *  @param cmdparam struct
+ *
+ *  @return NS_SUCCESS if suceeds else result of command
+ */
+
+int blsb_cmd_check( CmdParams* cmdparams )
+{
+	scanclient *sc = NULL;
+	Client *user;
+	
+	user = FindUser(cmdparams->av[0]);
+	if (!user)
+	{
+#if 0
+/* XXX TODO: Lookup Hostname */
+		if (!ValidateHost(cmdparams->av[0]) {
+			irc_prefmsg(blsb_bot, cmdparams->source, "Invalid Nick or Host");
+			return NS_FAILURE;
+		} else {
+			sc = ns_malloc(sizeof(scanclient));
+			sc->check = 1;
+			sc->user = cmdparams->source;
+			sc->domain = dl;
+			sc->lookup = ns_malloc(buflen);
+			ircsnprintf(sc->lookup, buflen, "%d.%d.%d.%d.%s", d, c, b, a, dl->domain);
+#endif
+		irc_prefmsg(blsb_bot, cmdparams->source, "Can not find %s online", cmdparams->av[0]);
+		return NS_ERR_SYNTAX_ERROR;
+	}
+	sc = do_lookup( user, cmdparams->source );
+	if( sc )
+	{
+		irc_prefmsg( blsb_bot, cmdparams->source, "Checking %s (%s) against DNS Blacklists", sc->user->name, sc->ip );
+		CommandReport( blsb_bot, "%s is checking %s (%s) against DNS Blacklists", cmdparams->source->name, sc->user->name, sc->ip );
+	}
+	return NS_SUCCESS;
 }
 
 /** @brief event_nickip
@@ -384,48 +420,12 @@ void dnsbl_callback(void *data, adns_answer *a)
 
 static int event_nickip( CmdParams* cmdparams )
 {
-	dom_list *dl;
-	lnode_t *node;
-	unsigned char a, b, c, d;
-	int buflen;
-	scanclient *sc;
-	
 	SET_SEGV_LOCATION();
-	
 	if (ModIsServerExcluded(cmdparams->source->uplink))
 		return NS_SUCCESS;
 	if (IsNetSplit(cmdparams->source))
 		return NS_SUCCESS;
-
-	d = (unsigned char) (cmdparams->source->ip.s_addr >> 24) & 0xFF;
-	c = (unsigned char) (cmdparams->source->ip.s_addr >> 16) & 0xFF;
-	b = (unsigned char) (cmdparams->source->ip.s_addr >> 8) & 0xFF;
-	a = (unsigned char) (cmdparams->source->ip.s_addr & 0xFF);
-
-	node = list_first(blsb.domains);
-	while (node) {
-		dl = lnode_get(node);
-		buflen = 18 + strlen(dl->domain);
-		sc = ns_malloc(sizeof(scanclient));
-		sc->check = NULL;
-		sc->user = cmdparams->source;
-		sc->domain = dl;
-		sc->lookup = ns_malloc(buflen);
-		ircsnprintf(sc->lookup, buflen, "%d.%d.%d.%d.%s", d, c, b, a, dl->domain);
-		switch (dl->type) {
-			case 1:	/* TXT record */
-				dns_lookup(sc->lookup, adns_r_txt, dnsbl_callback, sc);
-				break;
-			case 2: /* A record */
-				dns_lookup(sc->lookup, adns_r_a, dnsbl_callback, sc);
-				break;
-			default:
-				nlog(LOG_WARNING, "Unknown Type for DNS BL %s", dl->name);
-				break;
-		}
-		node = list_next(blsb.domains, node);
-	}
-
+	do_lookup( cmdparams->source, NULL );
 	return NS_SUCCESS;
 }
 
@@ -464,7 +464,7 @@ static void load_default_bldomains( void )
 	dom_list *default_domains;
 
 	default_domains = stddomlist;
-	while( default_domains->type != 0 )
+	while( default_domains->type != BL_LOOKUP_TYPE_MIN )
 	{
 		dl = new_bldomain( default_domains->name, default_domains->domain, default_domains->type );
 		default_domains++;

@@ -31,7 +31,13 @@
 #include "modconfig.h"
 #endif /* WIN32 */
 
-extern Bot *blsb_bot;
+typedef enum BL_LOOKUP_TYPE
+{
+	BL_LOOKUP_TYPE_MIN = 0,
+	BL_LOOKUP_TXT_RECORD,
+	BL_LOOKUP_A_RECORD,
+	BL_LOOKUP_TYPE_MAX,
+}BL_LOOKUP_TYPE;
 
 struct blsb {
 	int akilltime;
@@ -48,19 +54,18 @@ typedef struct cache_entry {
 	time_t when;
 } cache_entry;
 
-/* this is a list of cached scans */
-list_t *cache;
-
 typedef struct dom_list {
 	char name[BUFSIZE];
 	char domain[BUFSIZE];
-	int type;
+	BL_LOOKUP_TYPE type;
 } dom_list;
 
 typedef struct scanclient {
 	Client *user;
 	dom_list *domain;
 	Client *check;
+	char reverseip[HOSTIPLEN];
+	char ip[HOSTIPLEN];
 	char *lookup;
 } scanclient;
 
