@@ -202,6 +202,7 @@ void dnsbl_callback(void *data, adns_answer *a)
  *
  *  @return NS_SUCCESS if suceeds else result of command
  */
+
 scanclient *do_lookup( Client *lookupuser, Client *reportuser )
 {
 	static char ip[HOSTIPLEN];
