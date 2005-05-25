@@ -67,10 +67,6 @@ typedef struct scanclient {
 
 /* blsb_help.c */
 extern const char *blsb_about[];
-extern const char blsb_help_add_oneline[];
-extern const char blsb_help_del_oneline[];
-extern const char blsb_help_list_oneline[];
-extern const char blsb_help_check_oneline[];
 extern const char *blsb_help_add[];
 extern const char *blsb_help_del[];
 extern const char *blsb_help_list[];

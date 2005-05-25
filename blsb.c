@@ -89,11 +89,11 @@ ModuleInfo module_info =
 
 static bot_cmd blsb_commands[]=
 {
-	{"ADD",		blsb_cmd_add,	3,	NS_ULEVEL_ADMIN,	blsb_help_add, blsb_help_add_oneline},
-	{"DEL",		blsb_cmd_del,	1,	NS_ULEVEL_ADMIN,	blsb_help_del, blsb_help_del_oneline},
-	{"LIST",	blsb_cmd_list,	0,	NS_ULEVEL_ADMIN,	blsb_help_list, blsb_help_list_oneline},
-	{"CHECK",	blsb_cmd_check,	1,	NS_ULEVEL_OPER,		blsb_help_check,	 blsb_help_check_oneline},
-	{NULL,		NULL,			0, 	0,					NULL, 		NULL}
+	{"ADD",		blsb_cmd_add,	3,	NS_ULEVEL_ADMIN,	blsb_help_add},
+	{"DEL",		blsb_cmd_del,	1,	NS_ULEVEL_ADMIN,	blsb_help_del},
+	{"LIST",	blsb_cmd_list,	0,	NS_ULEVEL_ADMIN,	blsb_help_list},
+	{"CHECK",	blsb_cmd_check,	1,	NS_ULEVEL_OPER,		blsb_help_check},
+	{NULL,		NULL,			0, 	0,					NULL}
 };
 
 static bot_setting blsb_settings[]=

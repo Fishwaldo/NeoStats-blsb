@@ -23,13 +23,6 @@
 
 #include "neostats.h"
 
-const char blsb_help_add_oneline[] = "Add to the blacklist domains";
-const char blsb_help_del_oneline[] = "Delete from the blacklist domains";
-const char blsb_help_list_oneline[] = "List the blacklist domains";
-const char blsb_help_status_oneline[] = "View blsb status";
-const char blsb_help_remove_oneline[] = "Remove an akill set by blsb";
-const char blsb_help_check_oneline[] = "Scan a user";
-
 const char *blsb_about[] = {
 	"\2Open Proxy Scanning Bot Information\2",
 	"",
@@ -45,6 +38,7 @@ const char *blsb_about[] = {
 };
 
 const char *blsb_help_check[] = {
+	"Scan a user",
 	"Syntax: \2CHECK <nick|ip|hostname>\2",
 	"",
 	"Scan a user connected to your network, an IP address, or a",
@@ -54,6 +48,7 @@ const char *blsb_help_check[] = {
 };
 
 const char *blsb_help_status[] = {
+	"View blsb status",
 	"Syntax: \2STATUS\2",
 	"",
 	"Display status of the blacklist lookup service",
@@ -61,6 +56,7 @@ const char *blsb_help_status[] = {
 };
 
 const char *blsb_help_add[] = {
+	"Add to the blacklist domains",
 	"Syntax: \2ADD <domain> <type> <name>\2",
 	"",
 	"Add a domain to the blacklist lookup list",
@@ -72,6 +68,7 @@ const char *blsb_help_add[] = {
 };
 
 const char *blsb_help_del[] = {
+	"Delete from the blacklist domains",
 	"Syntax: \2DEL <domain>\2",
 	"",
 	"Delete entry matching <domain> from the list of blacklist domains",
@@ -79,6 +76,7 @@ const char *blsb_help_del[] = {
 };
 
 const char *blsb_help_list[] = {
+	"List the blacklist domains",
 	"Syntax: \2LIST\2",
 	"",
 	"List the current domains used for lookups",
@@ -86,6 +84,7 @@ const char *blsb_help_list[] = {
 };
 
 const char *blsb_help_remove[] = {
+	"Remove an akill set by blsb",
 	"Syntax: \2REMOVE <ip|hostname>\2",
 	"",
 	"Remove akills that have been set by blsb.",
