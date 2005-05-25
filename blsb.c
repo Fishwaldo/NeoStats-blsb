@@ -99,8 +99,8 @@ static bot_cmd blsb_commands[]=
 static bot_setting blsb_settings[]=
 {
 	{"AKILL",		&blsb.doakill,		SET_TYPE_BOOLEAN,	0,	0,	NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_akill,	NULL, (void*)1 	},	
-	{"AKILLTIME",	&blsb.akilltime,		SET_TYPE_INT,	0,	20736000,NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_akilltime,	NULL, (void*)86400 	},
-	{"CACHETIME",	&blsb.cachetime,		SET_TYPE_INT,	0,	86400,	NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_cachetime,	NULL, (void*)3600 	},
+	{"AKILLTIME",	&blsb.akilltime,		SET_TYPE_INT,	0,	20736000,NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_akilltime,	NULL, (void*)TS_ONE_DAY 	},
+	{"CACHETIME",	&blsb.cachetime,		SET_TYPE_INT,	0,	TS_ONE_DAY,	NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_cachetime,	NULL, (void*)TS_ONE_HOUR 	},
 	{"VERBOSE",		&blsb.verbose,		SET_TYPE_BOOLEAN,	0,	0,	NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_verbose,	NULL, (void*)1 	},
 	{"EXCLUSIONS",	&blsb.exclusions,		SET_TYPE_BOOLEAN,	0,	0,	NS_ULEVEL_ADMIN,	NULL,	blsb_help_set_exclusions,	blsb_set_exclusions_cb, (void *)0 },
 	{NULL,			NULL,			0,		0,	0, 	0,		NULL,	NULL,			NULL	},
