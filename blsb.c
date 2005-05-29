@@ -363,7 +363,7 @@ int blsb_cmd_del( CmdParams* cmdparams )
 		lnode = list_next(blsb.domains, lnode);
 	}		
 	/* if we get here, then we can't find the entry */
-	irc_prefmsg (blsb_bot, cmdparams->source, "Error, no entry for %", cmdparams->av[0]);
+	irc_prefmsg (blsb_bot, cmdparams->source, "Error, no entry for %s", cmdparams->av[0]);
 	return NS_FAILURE;
 }
 
