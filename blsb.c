@@ -178,7 +178,9 @@ void dnsbl_callback(void *data, adns_answer *a)
 					irc_chanalert( blsb_bot, "%s exists in %s blacklist: %s", sc->user->name, sc->domain->name, show );
 				if (sc->check) 
 					irc_prefmsg(blsb_bot, sc->check, "%s exists in %s blacklist: %s", sc->user->name, sc->domain->name, show);
-				/* XXX AKILL */
+				irc_prefmsg(blsb_bot, sc->user, "Your Host is listed as a Open Proxy in %s: %s", sc->domain->name, show);
+				if (blsb.doakill) 
+					irc_akill (blsb_bot, sc->ip, "*", blsb.akilltime, "Your Host is listed as a Open Proxy in %s: %s", sc->domain->name, show);
 			} else {
 				nlog(LOG_WARNING, "DNS error %s", adns_strerror(ri));
 			}
