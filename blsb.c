@@ -49,7 +49,6 @@ static int blsb_cmd_check( CmdParams* cmdparams );
 static int blsb_set_exclusions_cb( CmdParams *cmdparams, SET_REASON reason );
 void dnsbl_callback( void *data, adns_answer *a );
 
-static list_t *cache;
 Bot *blsb_bot;
 
 static dom_list stddomlist[] =
