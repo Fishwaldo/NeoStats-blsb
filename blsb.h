@@ -54,6 +54,7 @@ typedef struct dom_list {
 	char name[BUFSIZE];
 	char domain[BUFSIZE];
 	BL_LOOKUP_TYPE type;
+	char msg[BUFSIZE];
 } dom_list;
 
 typedef struct scanclient {
@@ -63,6 +64,7 @@ typedef struct scanclient {
 	char reverseip[HOSTIPLEN];
 	char ip[HOSTIPLEN];
 	char *lookup;
+	int banned;
 } scanclient;
 
 /* blsb_help.c */

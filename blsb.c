@@ -53,9 +53,9 @@ Bot *blsb_bot;
 
 static dom_list stddomlist[] =
 {
-	{"Blitzed OPM", "opm.blitzed.org", BL_LOOKUP_TXT_RECORD},
-	{"Secure IRC", "bl.irc-chat.net", BL_LOOKUP_TXT_RECORD},
-	{"Tor Exit Server", "tor.dnsbl.sectoor.de", BL_LOOKUP_TXT_RECORD},
+	{"Blitzed_OPM", "opm.blitzed.org", BL_LOOKUP_TXT_RECORD, "Open proxy - see http://opm.blitzed.org/%s"},
+	{"Secure-IRC", "bl.irc-chat.net", BL_LOOKUP_TXT_RECORD, "Insecure Host - See http://secure.irc-chat.net/ipinfo.php?ip=%s"},
+	{"Tor_Exit_Server", "tor.dnsbl.sectoor.de", BL_LOOKUP_TXT_RECORD, "Your Host is a Tor Exit Server"},
 	{"", "", 0}
 };
 
@@ -88,7 +88,7 @@ ModuleInfo module_info =
 
 static bot_cmd blsb_commands[]=
 {
-	{"ADD",		blsb_cmd_add,	3,	NS_ULEVEL_ADMIN,	blsb_help_add},
+	{"ADD",		blsb_cmd_add,	4,	NS_ULEVEL_ADMIN,	blsb_help_add},
 	{"DEL",		blsb_cmd_del,	1,	NS_ULEVEL_ADMIN,	blsb_help_del},
 	{"LIST",	blsb_cmd_list,	0,	NS_ULEVEL_ADMIN,	blsb_help_list},
 	{"CHECK",	blsb_cmd_check,	1,	NS_ULEVEL_OPER,		blsb_help_check},
@@ -139,13 +139,14 @@ ModuleEvent module_events[] =
  *  @return pointer to newly allocated entry
  */
 
-static dom_list *new_bldomain( char *name, char *domain, BL_LOOKUP_TYPE type )
+static dom_list *new_bldomain( char *name, char *domain, BL_LOOKUP_TYPE type, char *msg )
 {
 	dom_list *dl;
 
 	dl = ns_calloc( sizeof( dom_list ) );
 	strlcpy( dl->name, name, BUFSIZE );
 	strlcpy( dl->domain, domain, BUFSIZE );
+	strlcpy( dl->msg, msg, BUFSIZE );
 	dl->type = type;		
 	lnode_create_append( blsb.domains, dl );
 	DBAStore( "domains", dl->name, (void *)dl, sizeof( dom_list ) );
@@ -165,33 +166,42 @@ static dom_list *new_bldomain( char *name, char *domain, BL_LOOKUP_TYPE type )
 void dnsbl_callback(void *data, adns_answer *a)
 {
 	scanclient *sc = (scanclient *)data;
-	int len, i, ri;
+	int i;
 	char *show;
+	struct in_addr inp;
 
-	if (a && a->nrrs > 0) {
-		adns_rr_info(a->type, 0, 0, &len, 0, 0);
-		for(i = 0; i < a->nrrs;  i++) {
-			ri = adns_rr_info(a->type, 0, 0, 0, a->rrs.bytes +i*len, &show);
-			if (!ri) {
-				if (blsb.verbose) 
-					irc_chanalert( blsb_bot, "%s exists in %s blacklist: %s", sc->user->name, sc->domain->name, show );
-				if (sc->check) 
-					irc_prefmsg(blsb_bot, sc->check, "%s exists in %s blacklist: %s", sc->user->name, sc->domain->name, show);
-				irc_prefmsg(blsb_bot, sc->user, "Your Host is listed as a Open Proxy in %s: %s", sc->domain->name, show);
-				if (blsb.doakill) 
-					irc_akill (blsb_bot, sc->ip, "*", blsb.akilltime, "Your Host is listed as a Open Proxy in %s: %s", sc->domain->name, show);
-			} else {
-				nlog(LOG_WARNING, "DNS error %s", adns_strerror(ri));
+	if (a && (a->nrrs > 0) && (a->status == adns_s_ok)) {
+		for (i = 0; i < a->nrrs; i++) {
+			if (a->type == adns_r_a) {
+				/* here we should actually check the return IP address and see if we really want to do something with it */
+				inp = *((struct in_addr*)&a->rrs.inaddr[i]);
+				show = ns_malloc(BUFSIZE);
+				ircsnprintf(show, BUFSIZE, sc->domain->msg, sc->ip);
+			} if (a->type == adns_r_txt) {
+				show = a->rrs.manyistr[i]->str;
 			}
-			ns_free(show);
-			return;
+			if (blsb.verbose) 
+				irc_chanalert( blsb_bot, "%s (%s) exists in %s blacklist: %s", sc->user->name, sc->ip, sc->domain->name, show );
+				if (sc->check) 
+					irc_prefmsg(blsb_bot, sc->check, "%s (%s) exists in %s blacklist: %s", sc->user->name, sc->ip, sc->domain->name, show);
+			if (sc->banned == 0 && sc->user) {
+				sc->banned = 1;
+				/* only ban/msg the user once */
+				irc_prefmsg(blsb_bot, sc->user, "Your Host is listed as a inscure host at %s: %s", sc->domain->name, show);
+				if (blsb.doakill) {
+					irc_akill (blsb_bot, sc->ip, "*", blsb.akilltime, "Your Host is listed as a insecure host at %s: %s", sc->domain->name, show);
+				}
+			}
+			if (a->type == adns_r_a) ns_free(show);
 		}
-	}
-	if (blsb.verbose) 
-		irc_chanalert( blsb_bot, "%s does not exist in %s blacklist", sc->user->name, sc->domain->name );
-	if (sc->check) 
-		irc_prefmsg(blsb_bot, sc->check, "%s does not exist in %s blacklist", sc->user->name, sc->domain->name);
-	dlog(DEBUG3, "No Record for %s", sc->lookup);
+	} else if (a && (a->status == adns_s_nxdomain)) {
+		if (blsb.verbose) 
+			irc_chanalert( blsb_bot, "%s (%s) does not exist in %s blacklist", sc->user->name, sc->ip, sc->domain->name);
+		if (sc->check) 
+			irc_prefmsg(blsb_bot, sc->check, "%s (%s) does not exist in %s blacklist", sc->user->name, sc->ip, sc->domain->name);
+	} else if (a->status != adns_s_ok) {
+			nlog(LOG_WARNING, "DNS error %s", adns_strerror(a->status));
+	}			
 }
 
 /** @brief do_lookup
@@ -213,13 +223,14 @@ scanclient *do_lookup( Client *lookupuser, Client *reportuser )
 	scanclient *sc = NULL;
 	unsigned char a, b, c, d;
 	int buflen;
-
 	d = (unsigned char) ( lookupuser->ip.s_addr >> 24 ) & 0xFF;
 	c = (unsigned char) ( lookupuser->ip.s_addr >> 16 ) & 0xFF;
 	b = (unsigned char) ( lookupuser->ip.s_addr >> 8 ) & 0xFF;
 	a = (unsigned char) ( lookupuser->ip.s_addr & 0xFF );   
 	ircsnprintf( ip, HOSTIPLEN, "%d.%d.%d.%d", a, b, c, d );
 	ircsnprintf( reverseip, HOSTIPLEN, "%d.%d.%d.%d", d, c, b, a );
+	ircsnprintf( ip, HOSTIPLEN, "127.0.0.2");
+	ircsnprintf( reverseip, HOSTIPLEN, "2.0.0.127");
 	node = list_first( blsb.domains );
 	while( node )
 	{
@@ -230,6 +241,7 @@ scanclient *do_lookup( Client *lookupuser, Client *reportuser )
 		sc->check = reportuser;
 		sc->user = lookupuser;
 		sc->domain = dl;
+		sc->banned = 0;
 		sc->lookup = ns_malloc( buflen );
 		strlcpy( sc->ip, ip, HOSTIPLEN );
 		strlcpy( sc->reverseip, reverseip, HOSTIPLEN );
@@ -297,7 +309,8 @@ int blsb_cmd_add( CmdParams* cmdparams )
 	lnode_t *lnode;
 	int type;
 	char *name;
-
+	char *msg;
+	
 	if( list_isfull( blsb.domains ) )
 	{
 		irc_prefmsg( blsb_bot, cmdparams->source, "Error, domain list is full" );
@@ -309,7 +322,7 @@ int blsb_cmd_add( CmdParams* cmdparams )
 		irc_prefmsg( blsb_bot, cmdparams->source, "type field does not contain a valid type" );
 		return NS_FAILURE;
 	}
-	name = joinbuf( cmdparams->av, cmdparams->ac, 2 );
+	msg = joinbuf( cmdparams->av, cmdparams->ac, 3 );
 	/* XXX do a initial lookup on the domain to check it exists? */
 
 	/* check for duplicates */
@@ -317,7 +330,7 @@ int blsb_cmd_add( CmdParams* cmdparams )
 	while( lnode )
 	{
 		dl = lnode_get( lnode );
-		if( ( !ircstrcasecmp( dl->name, name ) ) || ( !ircstrcasecmp(dl->domain, cmdparams->av[0] ) ) )
+		if( ( !ircstrcasecmp( dl->name, cmdparams->av[2] ) ) || ( !ircstrcasecmp(dl->domain, cmdparams->av[0] ) ) )
 		{
 			irc_prefmsg( blsb_bot, cmdparams->source, "%s %s already has an entry", cmdparams->av[0], name );
 			ns_free( name );
@@ -325,7 +338,7 @@ int blsb_cmd_add( CmdParams* cmdparams )
 		}
 		lnode = list_next(blsb.domains, lnode);
 	}
-	dl = new_bldomain( name, cmdparams->av[0], type );
+	dl = new_bldomain( cmdparams->av[2], cmdparams->av[0], type, msg );
 	irc_prefmsg( blsb_bot, cmdparams->source, "Added domain %s (%s) as type %d", dl->name, dl->domain, dl->type );
 	CommandReport( blsb_bot, "%s added domain %s (%s) as type %d", cmdparams->source->name, dl->name, dl->domain, dl->type );
 	ns_free( name );
@@ -468,7 +481,7 @@ static void load_default_bldomains( void )
 	default_domains = stddomlist;
 	while( default_domains->type != BL_LOOKUP_TYPE_MIN )
 	{
-		dl = new_bldomain( default_domains->name, default_domains->domain, default_domains->type );
+		dl = new_bldomain( default_domains->name, default_domains->domain, default_domains->type, default_domains->msg );
 		default_domains++;
 	}
 }
@@ -486,6 +499,7 @@ int ModInit( void )
 {
 	ModuleConfig( blsb_settings );
 	blsb.domains = list_create( -1 );
+	me.want_nickip = 1;
 	if( !blsb.domains ) {
 		nlog( LOG_CRITICAL, "Unable to create domain list" );
 		return NS_FAILURE;
