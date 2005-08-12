@@ -229,8 +229,6 @@ scanclient *do_lookup( Client *lookupuser, Client *reportuser )
 	a = (unsigned char) ( lookupuser->ip.s_addr & 0xFF );   
 	ircsnprintf( ip, HOSTIPLEN, "%d.%d.%d.%d", a, b, c, d );
 	ircsnprintf( reverseip, HOSTIPLEN, "%d.%d.%d.%d", d, c, b, a );
-	ircsnprintf( ip, HOSTIPLEN, "127.0.0.2");
-	ircsnprintf( reverseip, HOSTIPLEN, "2.0.0.127");
 	node = list_first( blsb.domains );
 	while( node )
 	{
