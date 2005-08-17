@@ -92,7 +92,7 @@ static bot_cmd blsb_commands[]=
 	{"DEL",		blsb_cmd_del,	1,	NS_ULEVEL_ADMIN,	blsb_help_del},
 	{"LIST",	blsb_cmd_list,	0,	NS_ULEVEL_ADMIN,	blsb_help_list},
 	{"CHECK",	blsb_cmd_check,	1,	NS_ULEVEL_OPER,		blsb_help_check},
-	{NULL,		NULL,			0, 	0,					NULL}
+	NS_CMD_END()
 };
 
 static bot_setting blsb_settings[]=
@@ -102,7 +102,7 @@ static bot_setting blsb_settings[]=
 	{"CACHETIME",	&blsb.cachetime,		SET_TYPE_INT,	0,	TS_ONE_DAY,	NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_cachetime,	NULL, (void*)TS_ONE_HOUR 	},
 	{"VERBOSE",		&blsb.verbose,		SET_TYPE_BOOLEAN,	0,	0,	NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_verbose,	NULL, (void*)1 	},
 	{"EXCLUSIONS",	&blsb.exclusions,		SET_TYPE_BOOLEAN,	0,	0,	NS_ULEVEL_ADMIN,	NULL,	blsb_help_set_exclusions,	blsb_set_exclusions_cb, (void *)0 },
-	{NULL,			NULL,			0,		0,	0, 	0,		NULL,	NULL,			NULL	},
+	NS_SETTING_END()
 };
 
 /** BotInfo */
