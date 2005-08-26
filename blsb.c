@@ -306,7 +306,6 @@ int blsb_cmd_add( CmdParams* cmdparams )
 	dom_list *dl;
 	lnode_t *lnode;
 	int type;
-	char *name;
 	char *msg;
 	
 	if( list_isfull( blsb.domains ) )
@@ -330,7 +329,7 @@ int blsb_cmd_add( CmdParams* cmdparams )
 		dl = lnode_get( lnode );
 		if( ( !ircstrcasecmp( dl->name, cmdparams->av[2] ) ) || ( !ircstrcasecmp(dl->domain, cmdparams->av[0] ) ) )
 		{
-			irc_prefmsg( blsb_bot, cmdparams->source, "%s %s already has an entry", cmdparams->av[0], name );
+			irc_prefmsg( blsb_bot, cmdparams->source, "%s already has an entry", cmdparams->av[0] );
 			ns_free( name );
 			return NS_SUCCESS;
 		}
