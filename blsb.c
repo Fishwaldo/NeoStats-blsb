@@ -330,7 +330,6 @@ int blsb_cmd_add( CmdParams* cmdparams )
 		if( ( !ircstrcasecmp( dl->name, cmdparams->av[2] ) ) || ( !ircstrcasecmp(dl->domain, cmdparams->av[0] ) ) )
 		{
 			irc_prefmsg( blsb_bot, cmdparams->source, "%s already has an entry", cmdparams->av[0] );
-			ns_free( name );
 			return NS_SUCCESS;
 		}
 		lnode = list_next(blsb.domains, lnode);
@@ -338,7 +337,6 @@ int blsb_cmd_add( CmdParams* cmdparams )
 	dl = new_bldomain( cmdparams->av[2], cmdparams->av[0], type, msg );
 	irc_prefmsg( blsb_bot, cmdparams->source, "Added domain %s (%s) as type %d", dl->name, dl->domain, dl->type );
 	CommandReport( blsb_bot, "%s added domain %s (%s) as type %d", cmdparams->source->name, dl->name, dl->domain, dl->type );
-	ns_free( name );
 	return NS_SUCCESS;
 }
 
