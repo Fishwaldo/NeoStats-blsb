@@ -493,7 +493,7 @@ static void load_default_bldomains( void )
 int ModInit( void )
 {
 	ModuleConfig( blsb_settings );
-	blsb.domains = list_create( -1 );
+	blsb.domains = list_create( LISTCOUNT_T_MAX );
 	me.want_nickip = 1;
 	if( !blsb.domains ) {
 		nlog( LOG_CRITICAL, "Unable to create domain list" );
