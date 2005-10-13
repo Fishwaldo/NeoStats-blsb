@@ -41,12 +41,12 @@
 #endif
 #include "blsb.h"
 
-static int event_nickip( CmdParams* cmdparams );
-static int blsb_cmd_list( CmdParams* cmdparams );
-static int blsb_cmd_add( CmdParams* cmdparams );
-static int blsb_cmd_del( CmdParams* cmdparams );
-static int blsb_cmd_check( CmdParams* cmdparams );
-static int blsb_set_exclusions_cb( CmdParams *cmdparams, SET_REASON reason );
+static int event_nickip( const CmdParams *cmdparams );
+static int blsb_cmd_list( const CmdParams *cmdparams );
+static int blsb_cmd_add( const CmdParams *cmdparams );
+static int blsb_cmd_del( const CmdParams *cmdparams );
+static int blsb_cmd_check( const CmdParams *cmdparams );
+static int blsb_set_exclusions_cb( const CmdParams *cmdparams, SET_REASON reason );
 void dnsbl_callback( void *data, adns_answer *a );
 
 Bot *blsb_bot;
@@ -271,7 +271,7 @@ scanclient *do_lookup( Client *lookupuser, Client *reportuser )
  *  @return NS_SUCCESS if suceeds else result of command
  */
 
-int blsb_cmd_list( CmdParams* cmdparams )
+int blsb_cmd_list( const CmdParams *cmdparams )
 {
 	dom_list *dl;
 	lnode_t *lnode;
@@ -301,7 +301,7 @@ int blsb_cmd_list( CmdParams* cmdparams )
  *  @return NS_SUCCESS if suceeds else result of command
  */
 
-int blsb_cmd_add( CmdParams* cmdparams )
+int blsb_cmd_add( const CmdParams *cmdparams )
 {
 	dom_list *dl;
 	lnode_t *lnode;
@@ -351,7 +351,7 @@ int blsb_cmd_add( CmdParams* cmdparams )
  *  @return NS_SUCCESS if suceeds else result of command
  */
 
-int blsb_cmd_del( CmdParams* cmdparams ) 
+int blsb_cmd_del( const CmdParams *cmdparams ) 
 {
 	dom_list *dl;
 	lnode_t *lnode;
@@ -385,7 +385,7 @@ int blsb_cmd_del( CmdParams* cmdparams )
  *  @return NS_SUCCESS if suceeds else result of command
  */
 
-int blsb_cmd_check( CmdParams* cmdparams )
+int blsb_cmd_check( const CmdParams *cmdparams )
 {
 	scanclient *sc = NULL;
 	Client *user;
@@ -428,7 +428,7 @@ int blsb_cmd_check( CmdParams* cmdparams )
  *  @return NS_SUCCESS if suceeds else NS_FAILURE
  */
 
-static int event_nickip( CmdParams* cmdparams )
+static int event_nickip( const CmdParams *cmdparams )
 {
 	SET_SEGV_LOCATION();
 	if (ModIsServerExcluded(cmdparams->source->uplink))
@@ -551,7 +551,7 @@ int ModFini( void )
  *  @return NS_SUCCESS if suceeds else NS_FAILURE
  */
 
-static int blsb_set_exclusions_cb( CmdParams *cmdparams, SET_REASON reason )
+static int blsb_set_exclusions_cb( const CmdParams *cmdparams, SET_REASON reason )
 {
 	if( reason == SET_LOAD || reason == SET_CHANGE )
 	{
