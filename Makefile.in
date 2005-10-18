@@ -14,7 +14,7 @@ TARGET = blsb.so
 DOCS = README.blsb 
 DATA =
 SCRIPTS = 
-DISTFILES = $(SRCS) $(DOCS) modconfig.h.in configure install-sh ChangeLog Makefile.in blsb.h LICENSE RELNOTES modconfigwin32.h
+DISTFILES = $(SRCS) $(DOCS) modconfig.h.in configure install-sh ChangeLog Makefile.in blsb.h LICENSE RELNOTES modconfigwin32.h blsb.vcproj
 DISTDIR = @PACKAGE@-@VERSION@
 
 all:	module
@@ -46,7 +46,6 @@ dist:
 	@echo -n "Creating directories"
 	@-rm -rf $(DISTDIR)
 	@mkdir $(DISTDIR)
-	@mkdir $(DISTDIR)/libopm
 	@echo "Done"
 	@echo -n "Copying distribution files"
 	@for file in $(DISTFILES); do \
