@@ -150,6 +150,12 @@
 			RelativePath=".\ChangeLog">
 		</File>
 		<File
+			RelativePath=".\License">
+		</File>
+		<File
+			RelativePath=".\README.blsb">
+		</File>
+		<File
 			RelativePath=".\Relnotes">
 		</File>
 	</Files>

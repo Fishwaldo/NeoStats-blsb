@@ -6,7 +6,7 @@
 /* #undef DEBUG */
 
 /* Version number of package */
-#define MODULE_VERSION "3.0.a2"
+#define MODULE_VERSION "3.0.a3-dev"
 
 /* Major Version */
 #define MODULE_MAJOR "3"
@@ -15,6 +15,6 @@
 #define MODULE_MINOR "0"
 
 /* Revision */
-#define MODULE_REV "a2"
+#define MODULE_REV "a3-dev"
 
 #endif /* _MODCONFIGWIN32_H_ */
