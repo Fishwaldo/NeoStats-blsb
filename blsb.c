@@ -180,16 +180,16 @@ void dnsbl_callback(void *data, adns_answer *a)
 			} if (a->type == adns_r_txt) {
 				show = a->rrs.manyistr[i]->str;
 			}
-			if (blsb.verbose) 
-				irc_chanalert( blsb_bot, "%s (%s) exists in %s blacklist: %s", sc->user->name, sc->ip, sc->domain->name, show );
-				if (sc->check) 
-					irc_prefmsg(blsb_bot, sc->check, "%s (%s) exists in %s blacklist: %s", sc->user->name, sc->ip, sc->domain->name, show);
+			irc_chanalert( blsb_bot, "%s (%s) exists in %s blacklist: %s", sc->user->name, sc->ip, sc->domain->name, show );
+			if (sc->check) 
+				irc_prefmsg(blsb_bot, sc->check, "%s (%s) exists in %s blacklist: %s", sc->user->name, sc->ip, sc->domain->name, show);
 			if (sc->banned == 0 && sc->user) {
 				sc->banned = 1;
 				/* only ban/msg the user once */
 				irc_prefmsg(blsb_bot, sc->user, "Your Host is listed as a inscure host at %s: %s", sc->domain->name, show);
 				if (blsb.doakill) {
 					irc_akill (blsb_bot, sc->ip, "*", blsb.akilltime, "Your Host is listed as a insecure host at %s: %s", sc->domain->name, show);
+					irc_chanalert( blsb_bot, "Akilling %s!%s@%s", sc->user->name, sc->user->user->username, sc->user->user->hostname);
 				}
 			}
 			if (a->type == adns_r_a) ns_free(show);
