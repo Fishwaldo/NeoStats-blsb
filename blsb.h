@@ -35,11 +35,6 @@ typedef enum BL_LOOKUP_TYPE
 	BL_LOOKUP_TYPE_MAX
 }BL_LOOKUP_TYPE;
 
-typedef struct cache_entry {
-	unsigned long ip;
-	time_t when;
-} cache_entry;
-
 typedef struct dom_list {
 	char name[BUFSIZE];
 	char domain[BUFSIZE];
@@ -65,7 +60,6 @@ extern const char *blsb_help_list[];
 extern const char *blsb_help_check[];
 extern const char *blsb_help_set_akill[];
 extern const char *blsb_help_set_akilltime[];
-extern const char *blsb_help_set_cachetime[];
 extern const char *blsb_help_set_verbose[];
 extern const char *blsb_help_set_exclusions[];
 

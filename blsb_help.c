@@ -24,16 +24,10 @@
 #include "neostats.h"
 
 const char *blsb_about[] = {
-	"\2Open Proxy Scanning Bot Information\2",
+	"\2BLSB\2",
 	"",
-	"This service scans clients connecting to this network for",
-	"insecure proxies. Insecure proxies are often used to attack",
-	"networks or channels with clone bots. If you have a firewall,",
-	"or IDS software, please ignore any errors that this scan",
-	"may generate.",
-	"",
-	"If you have any further questions, please contact network",
-	"administration.",
+	"Checks clients against external blacklists as",
+	"they connect to the network.",
 	NULL
 };
 
@@ -44,14 +38,6 @@ const char *blsb_help_check[] = {
 	"Scan a user connected to your network, an IP address, or a",
 	"hostname for insecure proxies and report the status. Any",
 	"insecure proxy found, will be banned from the network.",
-	NULL
-};
-
-const char *blsb_help_status[] = {
-	"View blsb status",
-	"Syntax: \2STATUS\2",
-	"",
-	"Display status of the blacklist lookup service",
 	NULL
 };
 
@@ -83,16 +69,6 @@ const char *blsb_help_list[] = {
 	NULL
 };
 
-const char *blsb_help_remove[] = {
-	"Remove an akill set by blsb",
-	"Syntax: \2REMOVE <ip|hostname>\2",
-	"",
-	"Remove akills that have been set by blsb.",
-	"<ip|hostname> is the hostname listed in your akill list",
-	"(usually found with /stats a)",
-	NULL
-};
-
 const char *blsb_help_set_akill [] = {
 	"\2AKILL <ON|OFF>\2",
 	"Whether to issue an akill for positive lookups",
@@ -102,12 +78,6 @@ const char *blsb_help_set_akill [] = {
 const char *blsb_help_set_akilltime [] = {
 	"\2AKILLTIME <time>\2",
 	"How long the user will be banned from the network",
-	NULL
-};
-
-const char *blsb_help_set_cachetime [] = {
-	"\2CACHETIME <time>\2",
-	"Time (in seconds) that an entry will be cached",
 	NULL
 };
 
