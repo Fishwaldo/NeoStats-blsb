@@ -32,18 +32,8 @@ typedef enum BL_LOOKUP_TYPE
 	BL_LOOKUP_TYPE_MIN = 0,
 	BL_LOOKUP_TXT_RECORD,
 	BL_LOOKUP_A_RECORD,
-	BL_LOOKUP_TYPE_MAX,
+	BL_LOOKUP_TYPE_MAX
 }BL_LOOKUP_TYPE;
-
-struct blsb {
-	int akilltime;
-	int cachetime;
-	int cachehits;
-	int doakill;
-	int verbose;
-	int exclusions;
-	list_t *domains;
-} blsb;
 
 typedef struct cache_entry {
 	unsigned long ip;

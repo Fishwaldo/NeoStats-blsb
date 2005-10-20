@@ -47,9 +47,18 @@ static int blsb_cmd_add( const CmdParams *cmdparams );
 static int blsb_cmd_del( const CmdParams *cmdparams );
 static int blsb_cmd_check( const CmdParams *cmdparams );
 static int blsb_set_exclusions_cb( const CmdParams *cmdparams, SET_REASON reason );
-void dnsbl_callback( void *data, adns_answer *a );
 
-Bot *blsb_bot;
+static struct blsb {
+	int akilltime;
+	int cachetime;
+	int cachehits;
+	int doakill;
+	int verbose;
+	int exclusions;
+	list_t *domains;
+} blsb;
+
+static Bot *blsb_bot;
 
 static dom_list stddomlist[] =
 {
@@ -60,7 +69,7 @@ static dom_list stddomlist[] =
 };
 
 /** Copyright info */
-const char *blsb_copyright[] =
+static const char *blsb_copyright[] =
 {
 	"Copyright (c) 1999-2005, NeoStats",
 	"http://www.neostats.net/",
@@ -84,14 +93,15 @@ ModuleInfo module_info =
 	__TIME__,
 	MODULE_FLAG_LOCAL_EXCLUDES,
 	0,
+	0,
 };
 
 static bot_cmd blsb_commands[]=
 {
-	{"ADD",		blsb_cmd_add,	4,	NS_ULEVEL_ADMIN,	blsb_help_add},
-	{"DEL",		blsb_cmd_del,	1,	NS_ULEVEL_ADMIN,	blsb_help_del},
-	{"LIST",	blsb_cmd_list,	0,	NS_ULEVEL_ADMIN,	blsb_help_list},
-	{"CHECK",	blsb_cmd_check,	1,	NS_ULEVEL_OPER,		blsb_help_check},
+	{"ADD",		blsb_cmd_add,	4,	NS_ULEVEL_ADMIN,	blsb_help_add, 0, NULL, NULL},
+	{"DEL",		blsb_cmd_del,	1,	NS_ULEVEL_ADMIN,	blsb_help_del, 0, NULL, NULL},
+	{"LIST",	blsb_cmd_list,	0,	NS_ULEVEL_ADMIN,	blsb_help_list, 0, NULL, NULL},
+	{"CHECK",	blsb_cmd_check,	1,	NS_ULEVEL_OPER,		blsb_help_check, 0, NULL, NULL},
 	NS_CMD_END()
 };
 
@@ -139,7 +149,7 @@ ModuleEvent module_events[] =
  *  @return pointer to newly allocated entry
  */
 
-static dom_list *new_bldomain( char *name, char *domain, BL_LOOKUP_TYPE type, char *msg )
+static dom_list *new_bldomain( const char *name, const char *domain, BL_LOOKUP_TYPE type, const char *msg )
 {
 	dom_list *dl;
 
@@ -163,11 +173,11 @@ static dom_list *new_bldomain( char *name, char *domain, BL_LOOKUP_TYPE type, ch
  *  @return NS_SUCCESS if suceeds else result of command
  */
 
-void dnsbl_callback(void *data, adns_answer *a)
+static void dnsbl_callback(void *data, adns_answer *a)
 {
 	scanclient *sc = (scanclient *)data;
 	int i;
-	char *show;
+	char *show = NULL;
 	struct in_addr inp;
 
 	if (a && (a->nrrs > 0) && (a->status == adns_s_ok)) {
@@ -214,7 +224,7 @@ void dnsbl_callback(void *data, adns_answer *a)
  *  @return NS_SUCCESS if suceeds else result of command
  */
 
-scanclient *do_lookup( Client *lookupuser, Client *reportuser )
+static scanclient *do_lookup( Client *lookupuser, Client *reportuser )
 {
 	static char ip[HOSTIPLEN];
 	static char reverseip[HOSTIPLEN];
@@ -222,7 +232,7 @@ scanclient *do_lookup( Client *lookupuser, Client *reportuser )
 	dom_list *dl;
 	scanclient *sc = NULL;
 	unsigned char a, b, c, d;
-	int buflen;
+	unsigned int buflen;
 	d = (unsigned char) ( lookupuser->ip.s_addr >> 24 ) & 0xFF;
 	c = (unsigned char) ( lookupuser->ip.s_addr >> 16 ) & 0xFF;
 	b = (unsigned char) ( lookupuser->ip.s_addr >> 8 ) & 0xFF;
@@ -435,7 +445,7 @@ static int event_nickip( const CmdParams *cmdparams )
 		return NS_SUCCESS;
 	if (IsNetSplit(cmdparams->source))
 		return NS_SUCCESS;
-	do_lookup( cmdparams->source, NULL );
+	(void)do_lookup( cmdparams->source, NULL );
 	return NS_SUCCESS;
 }
 
@@ -470,13 +480,12 @@ static int load_dom( void *data, int size )
 
 static void load_default_bldomains( void )
 {
-	dom_list *dl;
 	dom_list *default_domains;
 
 	default_domains = stddomlist;
 	while( default_domains->type != BL_LOOKUP_TYPE_MIN )
 	{
-		dl = new_bldomain( default_domains->name, default_domains->domain, default_domains->type, default_domains->msg );
+		(void)new_bldomain( default_domains->name, default_domains->domain, default_domains->type, default_domains->msg );
 		default_domains++;
 	}
 }
