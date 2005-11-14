@@ -334,7 +334,7 @@ int blsb_cmd_add( const CmdParams *cmdparams )
 	while( lnode )
 	{
 		dl = lnode_get( lnode );
-		if( ( !ircstrcasecmp( dl->name, cmdparams->av[2] ) ) || ( !ircstrcasecmp(dl->domain, cmdparams->av[0] ) ) )
+		if( ( ircstrcasecmp( dl->name, cmdparams->av[2] ) == 0 ) || ( ircstrcasecmp(dl->domain, cmdparams->av[0] ) == 0 ) )
 		{
 			irc_prefmsg( blsb_bot, cmdparams->source, "%s already has an entry", cmdparams->av[0] );
 			return NS_SUCCESS;
