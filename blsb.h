@@ -40,6 +40,7 @@ typedef struct dom_list {
 	char domain[BUFSIZE];
 	BL_LOOKUP_TYPE type;
 	char msg[BUFSIZE];
+	int noban;
 } dom_list;
 
 typedef struct scanclient {

@@ -43,13 +43,14 @@ const char *blsb_help_check[] = {
 
 const char *blsb_help_add[] = {
 	"Add to the blacklist domains",
-	"Syntax: \2ADD <domain> <type> <name>\2",
+	"Syntax: \2ADD <domain> <type> <name> [NOBAN]\2",
 	"",
 	"Add a domain to the blacklist lookup list",
 	"<type> 1 for TXT record lookups",
 	"       2 for A record lookups",
 	"<domain> domain for lookups, e.g. opm.blitzed.org",
 	"<name> name to assign to this entry, e.g. Blitzed OPM",
+	"[NOBAN] does not ban if found, only inform the services channel",
 	NULL
 };
 

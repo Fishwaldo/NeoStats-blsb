@@ -60,9 +60,9 @@ static Bot *blsb_bot;
 
 static dom_list stddomlist[] =
 {
-	{"Blitzed_OPM", "opm.blitzed.org", BL_LOOKUP_TXT_RECORD, "Open proxy - see http://opm.blitzed.org/%s"},
-	{"Secure-IRC", "bl.irc-chat.net", BL_LOOKUP_TXT_RECORD, "Insecure Host - See http://secure.irc-chat.net/ipinfo.php?ip=%s"},
-	{"Tor_Exit_Server", "tor.dnsbl.sectoor.de", BL_LOOKUP_TXT_RECORD, "Your Host is a Tor Exit Server"},
+	{"Blitzed_OPM", "opm.blitzed.org", BL_LOOKUP_TXT_RECORD, "Open proxy - see http://opm.blitzed.org/%s", 0},
+	{"Secure-IRC", "bl.irc-chat.net", BL_LOOKUP_TXT_RECORD, "Insecure Host - See http://secure.irc-chat.net/ipinfo.php?ip=%s", 0},
+	{"Tor_Exit_Server", "tor.dnsbl.sectoor.de", BL_LOOKUP_TXT_RECORD, "Your Host is a Tor Exit Server", 0},
 	{"", "", 0}
 };
 
@@ -96,19 +96,19 @@ ModuleInfo module_info =
 
 static bot_cmd blsb_commands[]=
 {
-	{"ADD",		blsb_cmd_add,	4,	NS_ULEVEL_ADMIN,	blsb_help_add, 0, NULL, NULL},
-	{"DEL",		blsb_cmd_del,	1,	NS_ULEVEL_ADMIN,	blsb_help_del, 0, NULL, NULL},
-	{"LIST",	blsb_cmd_list,	0,	NS_ULEVEL_ADMIN,	blsb_help_list, 0, NULL, NULL},
-	{"CHECK",	blsb_cmd_check,	1,	NS_ULEVEL_OPER,		blsb_help_check, 0, NULL, NULL},
+	{"ADD",		blsb_cmd_add,	4,	NS_ULEVEL_ADMIN,	blsb_help_add,		0, NULL, NULL},
+	{"DEL",		blsb_cmd_del,	1,	NS_ULEVEL_ADMIN,	blsb_help_del,		0, NULL, NULL},
+	{"LIST",	blsb_cmd_list,	0,	NS_ULEVEL_ADMIN,	blsb_help_list,		0, NULL, NULL},
+	{"CHECK",	blsb_cmd_check,	1,	NS_ULEVEL_OPER,		blsb_help_check,	0, NULL, NULL},
 	NS_CMD_END()
 };
 
 static bot_setting blsb_settings[]=
 {
-	{"AKILL",		&blsb.doakill,		SET_TYPE_BOOLEAN,	0,	0,	NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_akill,	NULL, (void*)1 	},	
-	{"AKILLTIME",	&blsb.akilltime,		SET_TYPE_INT,	0,	20736000,NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_akilltime,	NULL, (void*)TS_ONE_DAY 	},
-	{"VERBOSE",		&blsb.verbose,		SET_TYPE_BOOLEAN,	0,	0,	NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_verbose,	NULL, (void*)1 	},
-	{"EXCLUSIONS",	&blsb.exclusions,		SET_TYPE_BOOLEAN,	0,	0,	NS_ULEVEL_ADMIN,	NULL,	blsb_help_set_exclusions,	blsb_set_exclusions_cb, (void *)0 },
+	{"AKILL",	&blsb.doakill,		SET_TYPE_BOOLEAN,	0,	0,		NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_akill,		NULL,			(void*)1 },	
+	{"AKILLTIME",	&blsb.akilltime,	SET_TYPE_INT,		0,	20736000,	NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_akilltime,	NULL,			(void*)TS_ONE_DAY },
+	{"VERBOSE",	&blsb.verbose,		SET_TYPE_BOOLEAN,	0,	0,		NS_ULEVEL_ADMIN, 	NULL,	blsb_help_set_verbose,		NULL,			(void*)1 },
+	{"EXCLUSIONS",	&blsb.exclusions,	SET_TYPE_BOOLEAN,	0,	0,		NS_ULEVEL_ADMIN,	NULL,	blsb_help_set_exclusions,	blsb_set_exclusions_cb, (void *)0 },
 	NS_SETTING_END()
 };
 
@@ -146,7 +146,7 @@ ModuleEvent module_events[] =
  *  @return pointer to newly allocated entry
  */
 
-static dom_list *new_bldomain( const char *name, const char *domain, BL_LOOKUP_TYPE type, const char *msg )
+static dom_list *new_bldomain( const char *name, const char *domain, BL_LOOKUP_TYPE type, const char *msg , int noban)
 {
 	dom_list *dl;
 
@@ -154,7 +154,8 @@ static dom_list *new_bldomain( const char *name, const char *domain, BL_LOOKUP_T
 	strlcpy( dl->name, name, BUFSIZE );
 	strlcpy( dl->domain, domain, BUFSIZE );
 	strlcpy( dl->msg, msg, BUFSIZE );
-	dl->type = type;		
+	dl->type = type;
+	dl->noban = noban;
 	lnode_create_append( blsb.domains, dl );
 	DBAStore( "domains", dl->name, (void *)dl, sizeof( dom_list ) );
 	return dl;
@@ -190,7 +191,7 @@ static void dnsbl_callback(void *data, adns_answer *a)
 			irc_chanalert( blsb_bot, "%s (%s) exists in %s blacklist: %s", sc->user->name, sc->ip, sc->domain->name, show );
 			if (sc->check) 
 				irc_prefmsg(blsb_bot, sc->check, "%s (%s) exists in %s blacklist: %s", sc->user->name, sc->ip, sc->domain->name, show);
-			if (sc->banned == 0 && sc->user) {
+			if (sc->banned == 0 && sc->user && !sc->domain->noban) {
 				sc->banned = 1;
 				/* only ban/msg the user once */
 				irc_prefmsg(blsb_bot, sc->user, "Your Host is listed as a inscure host at %s: %s", sc->domain->name, show);
@@ -263,7 +264,7 @@ static scanclient *do_lookup( Client *lookupuser, Client *reportuser )
 				nlog( LOG_WARNING, "Unknown Type for DNS BL %s", dl->name );
 				break;
 		}
-        node = list_next( blsb.domains, node );
+        	node = list_next( blsb.domains, node );
 	}
 	return sc;
 }
@@ -287,7 +288,7 @@ int blsb_cmd_list( const CmdParams *cmdparams )
 	irc_prefmsg (blsb_bot, cmdparams->source, "BlackList domains:");
 	while (lnode) {
 		dl = lnode_get(lnode);
-		irc_prefmsg (blsb_bot, cmdparams->source, "%s: %s (type %d)", dl->domain, dl->name, dl->type);
+		irc_prefmsg (blsb_bot, cmdparams->source, "%s: %s (type %d) %s", dl->domain, dl->name, dl->type, dl->noban ? "NOBAN" : "");
 		lnode = list_next(blsb.domains, lnode);
 	}
 	irc_prefmsg (blsb_bot, cmdparams->source, "End of list.");
@@ -341,7 +342,7 @@ int blsb_cmd_add( const CmdParams *cmdparams )
 		}
 		lnode = list_next(blsb.domains, lnode);
 	}
-	dl = new_bldomain( cmdparams->av[2], cmdparams->av[0], type, msg );
+	dl = new_bldomain( cmdparams->av[2], cmdparams->av[0], type, msg , ircstrcasecmp( cmdparams->av[3], "NOBAN" ) ? 1 : 0);
 	irc_prefmsg( blsb_bot, cmdparams->source, "Added domain %s (%s) as type %d", dl->name, dl->domain, dl->type );
 	CommandReport( blsb_bot, "%s added domain %s (%s) as type %d", cmdparams->source->name, dl->name, dl->domain, dl->type );
 	return NS_SUCCESS;
@@ -460,9 +461,12 @@ static int load_dom( void *data, int size )
 {
 	dom_list *dl;
 
-	dl = ns_calloc( sizeof(dom_list));
-	os_memcpy(dl, data, sizeof (dom_list));
-	lnode_create_append(blsb.domains, dl);
+	if( size == sizeof(dom_list) )
+	{
+		dl = ns_calloc( sizeof(dom_list));
+		os_memcpy(dl, data, sizeof (dom_list));
+		lnode_create_append(blsb.domains, dl);
+	}
 	return NS_FALSE;
 }
 
@@ -482,7 +486,7 @@ static void load_default_bldomains( void )
 	default_domains = stddomlist;
 	while( default_domains->type != BL_LOOKUP_TYPE_MIN )
 	{
-		(void)new_bldomain( default_domains->name, default_domains->domain, default_domains->type, default_domains->msg );
+		(void)new_bldomain( default_domains->name, default_domains->domain, default_domains->type, default_domains->msg , default_domains->noban );
 		default_domains++;
 	}
 }

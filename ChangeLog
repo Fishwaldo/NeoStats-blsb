@@ -1,6 +1,7 @@
 Black List Scanning Bot Module for NeoStats Changelog.
 ==============================================================================
 3.0.a3-dev - Fish (F) & Mark (M)
+ - Add support for lookup lists only without banning (D)
  - Make sure we broadcast a message when we akill even if not in verbose (F)
  - AKILL support (F)
  - Reorder add command so name works. (M)
