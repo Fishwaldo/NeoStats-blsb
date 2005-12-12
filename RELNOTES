@@ -1,4 +1,4 @@
-* BLSB * Version 3.0.a3-dev
+* BLSB * Version 3.0.a3
 ==============================================================================
 Important information you should know: (READ THIS!)
 ==============================================================================
@@ -25,4 +25,4 @@ from the directory ~/NeoStats 3.0/data before using this version.
 
 Known issues that we are aware of and should not be reported:
 
-* None at present
+BLSB may not function correctly on IRCu IRCd's. Use at your own risk
