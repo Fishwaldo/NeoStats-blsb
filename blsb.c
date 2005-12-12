@@ -188,9 +188,9 @@ static void dnsbl_callback(void *data, adns_answer *a)
 			} if (a->type == adns_r_txt) {
 				show = a->rrs.manyistr[i]->str;
 			}
-			irc_chanalert( blsb_bot, "%s (%s) exists in %s blacklist: %s", sc->user->name, sc->ip, sc->domain->name, show );
+			irc_chanalert( blsb_bot, "%s (%s) exists in %s blacklist: %s %s", sc->user->name, sc->ip, sc->domain->name, show, sc->domain->noban ? "(NOBAN)" : "" );
 			if (sc->check) 
-				irc_prefmsg(blsb_bot, sc->check, "%s (%s) exists in %s blacklist: %s", sc->user->name, sc->ip, sc->domain->name, show);
+				irc_prefmsg(blsb_bot, sc->check, "%s (%s) exists in %s blacklist: %s %s", sc->user->name, sc->ip, sc->domain->name, show, sc->domain->noban ? "(NOBAN)" : "" );
 			if (sc->banned == 0 && sc->user && !sc->domain->noban) {
 				sc->banned = 1;
 				/* only ban/msg the user once */
