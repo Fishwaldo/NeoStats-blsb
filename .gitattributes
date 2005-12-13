@@ -1,3 +1,4 @@
 * text=auto !eol
+/Makefile.am -text
 /README.blsb.html -text
 /blsb.vcproj -text
