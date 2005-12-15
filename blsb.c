@@ -342,7 +342,7 @@ int blsb_cmd_add( const CmdParams *cmdparams )
 		}
 		lnode = list_next(blsb.domains, lnode);
 	}
-	dl = new_bldomain( cmdparams->av[2], cmdparams->av[0], type, msg , ircstrcasecmp( cmdparams->av[3], "NOBAN" ) ? 1 : 0);
+	dl = new_bldomain( cmdparams->av[2], cmdparams->av[0], type, msg , ircstrcasecmp( cmdparams->av[3], "NOBAN" ) ? 0 : 1);
 	irc_prefmsg( blsb_bot, cmdparams->source, "Added domain %s (%s) as type %d", dl->name, dl->domain, dl->type );
 	CommandReport( blsb_bot, "%s added domain %s (%s) as type %d", cmdparams->source->name, dl->name, dl->domain, dl->type );
 	return NS_SUCCESS;

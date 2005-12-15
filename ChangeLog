@@ -1,6 +1,9 @@
 Black List Scanning Bot Module for NeoStats Changelog.
+Fish (F) & Mark (M) & DeadNotBuried (D)
 ==============================================================================
-3.0.a3 - Fish (F) & Mark (M) & DeadNotBuried (D)
+3.0.b1
+ - Fix check for NOBAN on add (D)
+3.0.a3
  - Add support for lookup lists only without banning (D)
  - Make sure we broadcast a message when we akill even if not in verbose (F)
  - AKILL support (F)
