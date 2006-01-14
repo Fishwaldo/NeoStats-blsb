@@ -63,7 +63,7 @@ static dom_list stddomlist[] =
 	{"Blitzed_OPM", "opm.blitzed.org", BL_LOOKUP_TXT_RECORD, "Open proxy - see http://opm.blitzed.org/%s", 0},
 	{"Secure-IRC", "bl.irc-chat.net", BL_LOOKUP_TXT_RECORD, "Insecure Host - See http://secure.irc-chat.net/ipinfo.php?ip=%s", 0},
 	{"Tor_Exit_Server", "tor.dnsbl.sectoor.de", BL_LOOKUP_TXT_RECORD, "Your Host is a Tor Exit Server", 0},
-	{"IRC Abusive Hosts", "ircbl.ahbl.org", BL_LOOKUP_A_RECORD, "Abusive Host - See http://www.ahbl.org/", 0},
+	{"IRC Abusive Hosts", "ircbl.ahbl.org", BL_LOOKUP_A_RECORD, "Abusive Host - See http://www.ahbl.org/ for more info and/or removal (your IP is %s)", 0},
 	{"", "", 0}
 };
 
@@ -178,6 +178,7 @@ static void dnsbl_callback(void *data, adns_answer *a)
 	int i;
 	char *show = NULL;
 	struct in_addr inp;
+	Client *u=NULL;
 
 	if (a && (a->nrrs > 0) && (a->status == adns_s_ok)) {
 		for (i = 0; i < a->nrrs; i++) {
@@ -189,25 +190,33 @@ static void dnsbl_callback(void *data, adns_answer *a)
 			} if (a->type == adns_r_txt) {
 				show = a->rrs.manyistr[i]->str;
 			}
-			irc_chanalert( blsb_bot, "%s (%s) exists in %s blacklist: %s %s", sc->user->name, sc->ip, sc->domain->name, show, sc->domain->noban ? "(NOBAN)" : "" );
-			if (sc->check) 
-				irc_prefmsg(blsb_bot, sc->check, "%s (%s) exists in %s blacklist: %s %s", sc->user->name, sc->ip, sc->domain->name, show, sc->domain->noban ? "(NOBAN)" : "" );
-			if (sc->banned == 0 && sc->user && !sc->domain->noban) {
+			irc_chanalert( blsb_bot, "%s (%s) exists in %s blacklist: %s %s", sc->usernick, sc->ip, sc->domain->name, show, sc->domain->noban ? "(NOBAN)" : "" );
+			if( sc->checknick[0] != '\0' )
+				u = FindUser( sc->checknick );
+			if( u ) 
+				irc_prefmsg(blsb_bot, u, "%s (%s) exists in %s blacklist: %s %s", sc->usernick, sc->ip, sc->domain->name, show, sc->domain->noban ? "(NOBAN)" : "" );
+			if (sc->banned == 0 && !sc->domain->noban) {
 				sc->banned = 1;
 				/* only ban/msg the user once */
-				irc_prefmsg(blsb_bot, sc->user, "Your Host is listed as a inscure host at %s: %s", sc->domain->name, show);
+				if( u ) 
+					irc_prefmsg(blsb_bot, u, "Your Host is listed as a inscure host at %s: %s", sc->domain->name, show);
 				if (blsb.doakill) {
-					irc_akill (blsb_bot, sc->ip, "*", blsb.akilltime, "Your Host is listed as a insecure host at %s: %s", sc->domain->name, show);
-					irc_chanalert( blsb_bot, "Akilling %s!%s@%s", sc->user->name, sc->user->user->username, sc->user->user->hostname);
+					if( sc->exclude < 1 )
+					{
+						irc_akill (blsb_bot, sc->ip, "*", blsb.akilltime, "Your Host is listed as a insecure host at %s: %s", sc->domain->name, show);
+						irc_chanalert( blsb_bot, "Akilling %s!%s@%s", sc->usernick, sc->username, sc->hostname);
+					}
 				}
 			}
 			if (a->type == adns_r_a) ns_free(show);
 		}
 	} else if (a && (a->status == adns_s_nxdomain)) {
 		if (blsb.verbose) 
-			irc_chanalert( blsb_bot, "%s (%s) does not exist in %s blacklist", sc->user->name, sc->ip, sc->domain->name);
-		if (sc->check) 
-			irc_prefmsg(blsb_bot, sc->check, "%s (%s) does not exist in %s blacklist", sc->user->name, sc->ip, sc->domain->name);
+			irc_chanalert( blsb_bot, "%s (%s) does not exist in %s blacklist", sc->usernick, sc->ip, sc->domain->name);
+		if( sc->checknick[0] != '\0' )
+			u = FindUser( sc->checknick );
+		if( u ) 
+			irc_prefmsg(blsb_bot, u, "%s (%s) does not exist in %s blacklist", sc->usernick, sc->ip, sc->domain->name);
 	} else if (a->status != adns_s_ok) {
 			nlog(LOG_WARNING, "DNS error %s", adns_strerror(a->status));
 	}			
@@ -245,8 +254,17 @@ static scanclient *do_lookup( Client *lookupuser, Client *reportuser )
 		/* Allocate enough for domain, ip address, additional period and NULL */
 		buflen = strlen( dl->domain ) + HOSTIPLEN + 1 + 1;
 		sc = ns_malloc( sizeof( scanclient ) );
-		sc->check = reportuser;
-		sc->user = lookupuser;
+		if( reportuser == NULL )
+			sc->checknick[0] = '\0';
+		else
+			strlcpy( sc->checknick, reportuser->name, MAXNICK );
+		strlcpy( sc->usernick, lookupuser->name, MAXNICK );
+		strlcpy( sc->username, lookupuser->user->username, MAXUSER );
+		strlcpy( sc->hostname, lookupuser->user->hostname, MAXHOST );
+		if( ModIsUserExcluded( lookupuser ) == NS_FALSE )
+			sc->exclude = 0;
+		else
+			sc->exclude = 1;
 		sc->domain = dl;
 		sc->banned = 0;
 		sc->lookup = ns_malloc( buflen );
@@ -409,8 +427,14 @@ int blsb_cmd_check( const CmdParams *cmdparams )
 			return NS_FAILURE;
 		} else {
 			sc = ns_malloc(sizeof(scanclient));
-			sc->check = 1;
-			sc->user = cmdparams->source;
+			strlcpy( sc->checknick, cmdparams->source->name, MAXNICK );
+			strlcpy( sc->usernick, cmdparams->source->name, MAXNICK );
+			strlcpy( sc->username, cmdparams->source->user->username, MAXUSER );
+			strlcpy( sc->hostname, cmdparams->source->user->hostname, MAXHOST );
+			if( ModIsUserExcluded( cmdparams->source ) == NS_FALSE )
+				sc->exclude = 0;
+			else
+				sc->exclude = 1;
 			sc->domain = dl;
 			sc->lookup = ns_malloc(buflen);
 			ircsnprintf(sc->lookup, buflen, "%d.%d.%d.%d.%s", d, c, b, a, dl->domain);
@@ -421,8 +445,8 @@ int blsb_cmd_check( const CmdParams *cmdparams )
 	sc = do_lookup( user, cmdparams->source );
 	if( sc )
 	{
-		irc_prefmsg( blsb_bot, cmdparams->source, "Checking %s (%s) against DNS Blacklists", sc->user->name, sc->ip );
-		CommandReport( blsb_bot, "%s is checking %s (%s) against DNS Blacklists", cmdparams->source->name, sc->user->name, sc->ip );
+		irc_prefmsg( blsb_bot, cmdparams->source, "Checking %s (%s) against DNS Blacklists", sc->usernick, sc->ip );
+		CommandReport( blsb_bot, "%s is checking %s (%s) against DNS Blacklists", cmdparams->source->name, sc->usernick, sc->ip );
 	}
 	return NS_SUCCESS;
 }

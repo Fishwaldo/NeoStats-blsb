@@ -44,9 +44,12 @@ typedef struct dom_list {
 } dom_list;
 
 typedef struct scanclient {
-	Client *user;
+	char usernick[MAXNICK];
+	char username[MAXUSER];
+	char hostname[MAXHOST];
+	int exclude;
 	dom_list *domain;
-	Client *check;
+	char checknick[MAXNICK];
 	char reverseip[HOSTIPLEN];
 	char ip[HOSTIPLEN];
 	char *lookup;
