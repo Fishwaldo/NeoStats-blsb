@@ -220,6 +220,8 @@ static void dnsbl_callback(void *data, adns_answer *a)
 	} else if (a->status != adns_s_ok) {
 			nlog(LOG_WARNING, "DNS error %s", adns_strerror(a->status));
 	}			
+	ns_free(sc->lookup);
+	ns_free(sc);
 }
 
 /** @brief do_lookup

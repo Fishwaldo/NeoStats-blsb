@@ -2,6 +2,7 @@ Black List Scanning Bot Module for NeoStats Changelog.
 Fish (F) & Mark (M) & DeadNotBuried (D)
 ==============================================================================
 3.0.b1-dev
+ - Fix memory leak after black list lookup (D)
  - Fix the lookup crash when user had signed off and left a dangling pointer (D)
  - don't akill excluded users/hosts (D)
  - add ircbl.ahbl.org to default black lists (D)
