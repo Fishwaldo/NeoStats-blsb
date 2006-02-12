@@ -62,7 +62,7 @@ static dom_list stddomlist[] =
 {
 	{"Blitzed_OPM", "opm.blitzed.org", BL_LOOKUP_TXT_RECORD, "Open proxy - see http://opm.blitzed.org/%s", 0},
 	{"Secure-IRC", "bl.irc-chat.net", BL_LOOKUP_TXT_RECORD, "Insecure Host - See http://secure.irc-chat.net/ipinfo.php?ip=%s", 0},
-	{"Tor_Exit_Server", "tor.dnsbl.sectoor.de", BL_LOOKUP_TXT_RECORD, "Your Host is a Tor Exit Server", 0},
+	{"Tor_Exit_Server", "exitnodes.tor.dnsbl.sectoor.de", BL_LOOKUP_TXT_RECORD, "Your Host is a Tor Exit Server", 0},
 	{"IRC Abusive Hosts", "ircbl.ahbl.org", BL_LOOKUP_A_RECORD, "Abusive Host - See http://www.ahbl.org/ for more info and/or removal (your IP is %s)", 0},
 	{"", "", 0}
 };
