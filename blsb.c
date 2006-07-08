@@ -200,7 +200,7 @@ static void dnsbl_callback(void *data, adns_answer *a)
 				if( u ) 
 					irc_prefmsg(blsb_bot, u, "Your Host is listed as a inscure host at %s: %s", sc->domain->name, show);
 				if (blsb.doakill) {
-					if( sc->exclude < 1 )
+					if( sc->exclude != 1 )
 					{
 						irc_akill (blsb_bot, sc->ip, "*", blsb.akilltime, "Your Host is listed as a insecure host at %s: %s", sc->domain->name, show);
 						irc_chanalert( blsb_bot, "Akilling %s!%s@%s", sc->usernick, sc->username, sc->hostname);
