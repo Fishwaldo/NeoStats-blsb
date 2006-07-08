@@ -8,6 +8,7 @@ Fish (F) & Mark (M) & DeadNotBuried (D)
  - don't akill excluded users/hosts (D)
  - add ircbl.ahbl.org to default black lists (D)
  - Fix check for NOBAN on add (D)
+ - Fix make install when NeoStats is installed in a non-default location (F)
 3.0.a3
  - Add support for lookup lists only without banning (D)
  - Make sure we broadcast a message when we akill even if not in verbose (F)
