@@ -1,7 +1,8 @@
 Black List Scanning Bot Module for NeoStats Changelog.
 Fish (F) & Mark (M) & DeadNotBuried (D)
 ==============================================================================
-3.0.b1-dev
+3.0.a4
+ - fix %s in help file which crashes NeoStats (F)
  - correct ADD help to include akill reason
  - remove Blitzed_OPM as it has closed (D)
  - Fix memory leak after black list lookup (D)

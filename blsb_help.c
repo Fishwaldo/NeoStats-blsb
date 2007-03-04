@@ -51,7 +51,7 @@ const char *blsb_help_add[] = {
 	"<domain> domain for lookups, e.g. opm.blitzed.org",
 	"<name> name to assign to this entry, e.g. Blitzed OPM",
 	"[NOBAN] does not ban if found, only inform the services channel",
-	"<akill reason> may include %s which substitutes the ip address",
+	"<akill reason> may include %%s which substitutes the ip address",
 	NULL
 };
 
