@@ -197,6 +197,7 @@ static void dnsbl_callback(void *data, adns_answer *a)
 			if (sc->banned == 0 && !sc->domain->noban) {
 				sc->banned = 1;
 				/* only ban/msg the user once */
+				u = FindUser(sc->usernick);
 				if( u ) 
 					irc_prefmsg(blsb_bot, u, "Your Host is listed as a inscure host at %s: %s", sc->domain->name, show);
 				if (blsb.doakill) {
