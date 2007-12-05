@@ -22,7 +22,7 @@
             <make name="build" targets="distcheck">
                 <process processor="${checkbuild.pp}"/>
             </make>
-            <artifact name="SnapShot" file="blsb-*.tar.gz"/>
+            <artifact name="SnapShot" file="BLSB-*.tar.gz"/>
         </command>
     </recipe>
     <recipe name="Win32-Build">
