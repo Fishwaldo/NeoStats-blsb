@@ -22,7 +22,7 @@
             <make name="build" targets="distcheck">
                 <process processor="${checkbuild.pp}"/>
             </make>
-            <artifact name="SnapShot" file="OPSB-*.tar.gz"/>
+            <artifact name="SnapShot" file="blsb-*.tar.gz"/>
         </command>
     </recipe>
     <recipe name="Win32-Build">
@@ -34,7 +34,7 @@
         </post-processor>
         <resource name="Win32" required="true" version="1"/>
         <command name="Build-Core">
-            <executable name="MSBuild core" exe="${MSBuildPath}\MSBuild.exe" args="OPSB.sln /p:Configuration=Release">
+            <executable name="MSBuild core" exe="${MSBuildPath}\MSBuild.exe" args="blsb.sln /p:Configuration=Release">
                 <environment name="VCBUILD_DEFAULT_OPTIONS" value="/u"/>
                 <process processor="${checkbuild.pp}"/>
             </executable>
@@ -49,14 +49,14 @@
         </post-processor>
         <resource name="Win32" required="true" version="1"/>
         <command name="Build-Core">
-            <executable name="MSBuild core" exe="${MSBuildPath}\MSBuild.exe" args="OPSB.sln /p:Configuration=Release">
+            <executable name="MSBuild core" exe="${MSBuildPath}\MSBuild.exe" args="blsb.sln /p:Configuration=Release">
                 <environment name="VCBUILD_DEFAULT_OPTIONS" value="/u"/>
                 <process processor="${checkbuild.pp}"/>
             </executable>
         </command>
         <command name="MakeDist">
             <executable name="MakeSnap" exe="${base.dir}\\tools\\buildwin32snap.bat" args="${build.revision}"/>
-            <artifact name="OPSB Setup File" file="${base.dir}\\tools\\OPSB-Setup-*.exe"/>
+            <artifact name="blsb Setup File" file="${base.dir}\\tools\\blsb-Setup-*.exe"/>
         </command>
     </recipe>
 </project>
