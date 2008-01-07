@@ -210,7 +210,7 @@ static void dnsbl_callback(void *data, adns_answer *a)
 			}
 			if (a->type == adns_r_a) ns_free(show);
 		}
-	} else if (a && (a->status == adns_s_nxdomain)) {
+	} else if (a && ((a->status == adns_s_nxdomain) || (a->status == adns_s_nodata))) {
 		if (blsb.verbose) 
 			irc_chanalert( blsb_bot, "%s (%s) does not exist in %s blacklist", sc->usernick, sc->ip, sc->domain->name);
 		if( sc->checknick[0] != '\0' )
